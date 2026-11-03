@@ -8,7 +8,7 @@ Teil von **Freewood für Forever**, Version 0.1.241. · Part of **Freewood for F
 
 ## Screenshots
 
-![Briefkasten beim Abholen · Mailbox while fetching](docs/img/mail.jpg)
+![Briefkasten beim Abholen · Mailbox while fetching](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
 *Briefkasten beim Abholen · Mailbox while fetching*
 
 ## Deutsch
