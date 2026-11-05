@@ -54,7 +54,7 @@ local Mail = FW:NewModule("Mail", {
     title = L.MAIL_TITLE,
     description = L.MAIL_DESC,
     defaults = {
-        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true },
+        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false },
         recipients = {},
         lists = {},
         archive = {},          -- entfernte Briefe, neueste zuerst
@@ -429,12 +429,16 @@ function Mail.ColorSubject(s)
     return s
 end
 
--- Nachnahme-Briefe werden NIE geloescht: auch ueber das Blizzard-Fenster wird "Loeschen" zu "An Absender zurueck"
-if not Mail.deleteWrapped and _G.DeleteInboxItem and _G.ReturnInboxItem and _G.GetInboxHeaderInfo then
+-- Nachnahme-Briefe werden NIE geloescht: auch ueber das Blizzard-Fenster wird "Loeschen" zu "An Absender zurueck".
+-- ACHTUNG: Das ersetzt die Blizzard-Funktion DeleteInboxItem und "verunreinigt" sie (Taint). Auf Forever kam danach
+-- "Freewood-Mail wurde blockiert" beim Benutzen von Items aus dem Inventar. Darum nur auf Wunsch
+-- (settings.guardDelete, Standard aus); unser eigenes Fenster schuetzt Nachnahme-Briefe ohnehin selbst.
+function Mail.InstallDeleteGuard()
+    if Mail.deleteWrapped or not (_G.DeleteInboxItem and _G.ReturnInboxItem and _G.GetInboxHeaderInfo) then return end
     Mail.deleteWrapped = true
     local origDelete = _G.DeleteInboxItem
     _G.DeleteInboxItem = function(i, ...)
-        if not Mail.allowDelete then
+        if Mail.db and Mail.db.settings.guardDelete and not Mail.allowDelete then
             local ok, _, _, sender, _, _, cod, _, hasItem = pcall(_G.GetInboxHeaderInfo, i)
             if ok and tonumber(cod) and cod > 0 then
                 pcall(_G.ReturnInboxItem, i)
@@ -1115,6 +1119,7 @@ function Mail:OnSendFailed()
 end
 
 function Mail:OnEnable()
+    if self.db.settings.guardDelete then pcall(Mail.InstallDeleteGuard) end
     self.driver = self.driver or CreateFrame("Frame")
     local acc = 0
     self.driver:SetScript("OnUpdate", function(_, elapsed)
