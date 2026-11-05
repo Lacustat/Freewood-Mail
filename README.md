@@ -1,51 +1,73 @@
-# Freewood-Forever-Mail
+# Freewood-Mail
 
-> Briefkasten · Mailbox
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.0 · Interface 16001 (World of Warcraft: Forever).
 
-Teil von **Freewood für Forever**, Version 0.1.241. · Part of **Freewood for Forever**, version 0.1.241.
-
-[Deutsch](#deutsch) · [English](#english)
-
-## Screenshots
-
-![Briefkasten beim Abholen · Mailbox while fetching](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
-*Briefkasten beim Abholen · Mailbox while fetching*
+## Inhalt · Contents
+- [Deutsch](#deutsch)
+- [English](#english)
 
 ## Deutsch
 
-Eigenes Briefkasten-Fenster (optional, standardmäßig aus): alles oder Ausgewähltes sicher öffnen, letzte Empfänger, Mailinglisten mit Automatik, mehrere Items pro Versand, Gold-Überschuss, Nachnahme, Archiv und Rückversand. Braucht Core; mit Creator und Brett kommen die Brett-Briefe dazu (optional).
+### Was ist das?
+Ein eigenes Briefkasten-Fenster (optional, standardmäßig aus): alles oder Ausgewähltes sicher öffnen, letzte Empfänger, Mailinglisten mit Automatik, mehrere Items pro Versand, Gold-Überschuss, Nachnahme, Archiv und Rückversand.
 
-### Kurzanleitung
+### Funktionen
+- Einschalten: Einstellungen > Briefkasten > „Normalen Briefkasten ersetzen“ oder `/fwmail on` (`/fwmail off` schaltet zurück). Das normale Fenster bleibt unsichtbar offen, damit Brett-Aufträge weiter funktionieren.
+- Posteingang: „Alles öffnen“ oder „Nur Ausgewählte“. Ein Taschenplatz bleibt immer frei. Geleerte Briefe werden entfernt und vorher im Archiv gesichert (suchbar, Aufbewahrungsdauer einstellbar).
+- Nachnahme-Briefe werden nie automatisch genommen („Zahlen und nehmen“ mit zweitem Klick). „Löschen“ löscht sie nie, sondern schickt sie an den Absender zurück.
+- Senden: Empfänger mit Liste der letzten, Betreff, Text, Items, Gold, Nachnahme; mehrere Items werden als mehrere Briefe nacheinander gesendet, das Tempo passt sich dem Server an.
+- Mailinglisten: pro Charakter Name und Items, „automatisch beim Öffnen senden“ und „Gold über … senden“. Für Brett-Aufträge reservierte Items werden nicht verschickt.
+- Brett-Briefe: Mit Creator und Brett wird der Brief eines Brett-Auftrags im Freewood-Briefkasten vorbereitet und automatisch gesendet, sobald alles stimmt (abschaltbar).
 
-1. Einschalten: Einstellungen > Briefkasten > „Normalen Briefkasten ersetzen“ oder `/fwmail on` (`/fwmail off` schaltet zurück). Das normale Fenster bleibt dabei unsichtbar geöffnet, damit Brett-Aufträge weiter funktionieren.
-2. Reiter **Posteingang**: Briefe wählen und lesen, **Alles öffnen** oder **Nur Ausgewählte** nehmen. Ein Platz in den Taschen bleibt immer frei. Geleerte Briefe werden entfernt und vorher im **Archiv** gesichert (suchbar, Aufbewahrungsdauer einstellbar).
-3. Nachnahme-Briefe werden nie automatisch genommen: **Zahlen und nehmen** mit zweitem Klick zur Bestätigung. **Löschen** löscht Nachnahme-Briefe nie, sondern schickt sie sofort an den Absender zurück (auch im normalen Fenster). Mit **Zurück an Absender** (zweimal klicken, auch als „<“ in der Liste) schickst du jeden Brief mit Anhang zurück.
-4. Reiter **Senden**: Empfänger (mit Liste der letzten), Betreff, Text, Items, Gold, Nachnahme. Auch reine Textbriefe ohne Anhang sind möglich. Mehrere Items werden als mehrere Briefe nacheinander gesendet, so schnell der Server es zulässt (das Tempo passt sich selbst an).
-5. Reiter **Mailinglisten**: pro Charakter Name und Items festlegen, „automatisch beim Öffnen senden“ und „Gold über … senden“ (Überschuss). **Alle Listen jetzt senden**. Für Brett-Aufträge reservierte Items werden dabei nicht verschickt.
-6. Brett-Briefe: Wird ein Brett-Auftrag per Brief abgegeben, bereitet das Brett den Brief im Freewood-Briefkasten vor (Hinweis „Brett-Auftrag“) und sendet ihn automatisch, sobald alles stimmt (abschaltbar). Betreff `[Brett] Auftragsname`, grün hervorgehoben; Text mit Kurzinfo. Beim Auftraggeber werden solche Briefe gegen den eigenen Auftrag geprüft; Fehler sind getrennt benannt (kein passender Auftrag, schon vergeben, Nachnahme zu hoch).
+### Abhängigkeiten
+- Benötigt: `Freewood-Core`
+- Optional: `Freewood-Creator`, `Freewood-Brett`
+
+### Befehle
+- `/fwmail`: Fenster ein- oder ausblenden (bei offenem Briefkasten)
+- `/fwmail on` / `/fwmail off`: eigenen Briefkasten ein- oder ausschalten
+- `/fwmail archive`: Archiv öffnen
+
+### Installation
+Den Ordner `Freewood-Mail` nach `World of Warcraft\_forever_\Interface\AddOns\` kopieren. Neue Dateien lädt das Spiel erst nach einem kompletten Neustart; ein `/reload` genügt nur, wenn sich bestehende Dateien geändert haben. Fehler sichtbar machen: `/console scriptErrors 1`, danach `/reload`.
+
+### Hinweise
+
+- Aus der OctoWoW-Version übernommen (nur Code). Im Spiel noch nicht geprüft; die Anbindung an Brett ist noch nicht vollständig (Brett hat in Forever noch den älteren Stand).
+
+### Lizenz
+GPL-3.0, siehe `LICENSE`.
+
+---
 
 ## English
 
-Own mailbox window (optional, off by default): open all or selected mails safely, recent recipients, mailing lists with automation, several items per send, gold surplus, cash on delivery, archive and return to sender. Requires Core; with Creator and Brett the board letters are added (optional).
+### What is it?
+Own mailbox window (optional, off by default): open all or selected mails safely, recent recipients, mailing lists with automation, several items per send, gold surplus, cash on delivery, archive and return to sender.
 
-### Short guide
+### Features
+- Switch on: Settings > Mailbox > “Replace normal mailbox” or `/fwmail on` (`/fwmail off` switches back). The normal window stays open but invisible so board quests keep working.
+- Inbox: “Open all” or “Open selected only”. One bag slot always stays free. Emptied mails are removed and saved in the archive first (searchable, retention adjustable).
+- Cash-on-delivery mails are never taken automatically (“Pay and take” needs a second click). “Delete” never deletes them but returns them to the sender.
+- Send: recipient with a list of recent ones, subject, text, items, gold, cash on delivery; several items are sent as several mails one after another, the pace adapts to the server.
+- Mailing lists: per character name and items, “send automatically when the mailbox opens” and “send gold above …”. Items reserved for board quests are not sent.
+- Board letters: with Creator and Brett the letter of a board quest is prepared in the Freewood mailbox and sent automatically once everything is correct (can be switched off).
 
-1. Switch on: Settings > Mailbox > "Replace the normal mailbox window" or `/fwmail on` (`/fwmail off` switches back). The normal window stays open but invisible so board quests keep working.
-2. **Inbox** tab: select and read mails, **Open all** or **Open selected only**. One bag slot always stays free. Emptied mails are removed and saved in the **archive** first (searchable, retention adjustable).
-3. Cash-on-delivery mails are never taken automatically: **Pay and take** needs a second click. **Delete** never deletes cash-on-delivery mails but returns them to the sender at once (also in the normal window). **Return to sender** (click twice, also as "<" in the list) sends back any mail with attachments.
-4. **Send** tab: recipient (with list of recent ones), subject, text, items, gold, cash on delivery. Plain text mails without attachments are possible. Several items are sent as several mails one after another, as fast as the server allows (the speed adapts itself).
-5. **Mailing lists** tab: per character set name and items, "send automatically when the mailbox opens" and "send gold above ..." (surplus). **Send all lists now**. Items reserved for board quests are not sent.
-6. Board letters: when a board quest is handed in by letter, the board prepares the letter in the Freewood mailbox (note "Board mission") and sends it automatically once everything is correct (can be switched off). Subject `[Brett] quest name`, shown in green; text with short info. On the giver's side such letters are checked against their own quest; errors are named separately (no matching quest, already taken, cash on delivery too high).
+### Dependencies
+- Required: `Freewood-Core`
+- Optional: `Freewood-Creator`, `Freewood-Brett`
 
-## Installation · Abhängigkeiten · Dependencies
+### Commands
+- `/fwmail`: Fenster ein- oder ausblenden (bei offenem Briefkasten)
+- `/fwmail on` / `/fwmail off`: eigenen Briefkasten ein- oder ausschalten
+- `/fwmail archive`: Archiv öffnen
 
-Ordner `Freewood-Forever-Mail` nach `Interface\AddOns\` kopieren. · Copy the folder `Freewood-Forever-Mail` to `Interface\AddOns\`.
+### Installation
+Copy the folder `Freewood-Mail` to `World of Warcraft\_forever_\Interface\AddOns\`. New files only load after a full game restart; a `/reload` is enough only when existing files changed. To see errors: `/console scriptErrors 1`, then `/reload`.
 
-- Benötigt · Required: `Freewood-Forever-Core`
-- Optional: `Freewood-Forever-Creator`, `Freewood-Forever-Brett`
+### Notes
 
-Alle Module und ausführliche Anleitungen: Repo `Freewood-Forever-AI`, `docs/module/`. · All modules and full guides: repo `Freewood-Forever-AI`, `docs/module/`.
+- Taken over from the OctoWoW version (code only). Not yet verified in game; the link to Brett is not complete yet (Brett is still at the older state in Forever).
 
-Hinweis · Note: Die Anleitungen stammen aus Code und Texten der Module; nicht alles ist im Spiel geprüft. · The guides are derived from the modules' code and texts; not everything is verified in game.
-
-Autor · Author: Lacustat. Lizenz · License: GPL-3.0-or-later (`LICENSE`).
+### License
+GPL-3.0, see `LICENSE`.
