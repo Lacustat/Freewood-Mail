@@ -36,7 +36,7 @@ Den Ordner `Freewood-Mail` nach `World of Warcraft\_forever_\Interface\AddOns\` 
 ### Hinweise
 
 - Aus der OctoWoW-Version übernommen (nur Code). Im Spiel noch nicht geprüft; die Anbindung an Brett ist noch nicht vollständig (Brett hat in Forever noch den älteren Stand).
-- Das Blizzard-Fenster wird nicht mehr abgesichert (Löschen von Nachnahme-Briefen): Das Ersetzen von  verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
+- Das Blizzard-Fenster wird nicht mehr abgesichert (Löschen von Nachnahme-Briefen): Das Ersetzen von `DeleteInboxItem` verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
 
 ### Lizenz
 GPL-3.0, siehe `LICENSE`.
@@ -71,7 +71,7 @@ Copy the folder `Freewood-Mail` to `World of Warcraft\_forever_\Interface\AddOns
 ### Notes
 
 - Taken over from the OctoWoW version (code only). Not yet verified in game; the link to Brett is not complete yet (Brett is still at the older state in Forever).
-- The Blizzard window is no longer guarded against deleting cash-on-delivery mails: replacing  caused “Freewood-Mail was blocked” when using items on Forever. Our own window still protects them.
+- The Blizzard window is no longer guarded against deleting cash-on-delivery mails: replacing `DeleteInboxItem` caused “Freewood-Mail was blocked” when using items on Forever. Our own window still protects them.
 
 ### License
 GPL-3.0, see `LICENSE`.
