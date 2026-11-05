@@ -94,10 +94,12 @@ local function Trim(s)
 end
 
 -- Charaktername: Leerzeichen weg, erster Buchstabe gross
+-- Namen koennen auf Forever aus Vor- und Nachname bestehen ("Pinky Freewood"): Leerzeichen bleiben, mehrfache werden einfach
 function Mail.CleanName(s)
-    s = Trim(s):gsub("%s+", "")
+    s = Trim(s):gsub("%s+", " ")
     if s == "" then return "" end
-    return (s:sub(1, 1):upper() .. s:sub(2))
+    s = s:gsub("(%a)(%S*)", function(a, b) return a:upper() .. b end)
+    return s
 end
 
 local function IsSelf(name)
@@ -231,6 +233,96 @@ end
 
 function Mail:Recipients()
     return self.db.recipients
+end
+
+------------------------------------------------------------------------
+-- Namensvorschlaege: Freunde, Gilde, letzte Empfaenger
+------------------------------------------------------------------------
+
+local function PlainName(n)
+    n = Trim(n)
+    local dash = n:find("-", 1, true)
+    if dash then
+        local realm = GetRealmName and GetRealmName() or ""
+        local r = n:sub(dash + 1)
+        if realm ~= "" and r:gsub("%s", ""):lower() == realm:gsub("%s", ""):lower() then n = n:sub(1, dash - 1) end
+    end
+    return n
+end
+
+function Mail.FriendNames()
+    local out = {}
+    pcall(function()
+        local FL = _G.C_FriendList
+        local n = (FL and FL.GetNumFriends and FL.GetNumFriends()) or (GetNumFriends and GetNumFriends()) or 0
+        for i = 1, math.min(tonumber(n) or 0, 200) do
+            local name
+            if FL and FL.GetFriendInfoByIndex then
+                local info = FL.GetFriendInfoByIndex(i)
+                name = type(info) == "table" and info.name or nil
+            elseif GetFriendInfo then
+                name = GetFriendInfo(i)
+            end
+            if type(name) == "string" and name ~= "" then out[#out + 1] = PlainName(name) end
+        end
+    end)
+    return out
+end
+
+function Mail.GuildNames()
+    local out = {}
+    pcall(function()
+        if IsInGuild and not IsInGuild() then return end
+        local n = GetNumGuildMembers and GetNumGuildMembers() or 0
+        for i = 1, math.min(tonumber(n) or 0, 1000) do
+            local name = GetGuildRosterInfo and GetGuildRosterInfo(i)
+            if type(name) == "string" and name ~= "" then out[#out + 1] = PlainName(name) end
+        end
+    end)
+    return out
+end
+
+-- Gildenliste anfordern (Antwort kommt asynchron; beim naechsten Tippen ist sie da)
+function Mail.RequestGuild()
+    pcall(function()
+        if IsInGuild and not IsInGuild() then return end
+        if C_GuildInfo and C_GuildInfo.GuildRoster then C_GuildInfo.GuildRoster()
+        elseif GuildRoster then GuildRoster() end
+    end)
+end
+
+-- Treffer fuer eine Eingabe. Rueckgabe: { { name, src = "friend"|"guild"|"recent" }, ... }
+-- Reihenfolge: Anfang des Namens vor Teiltreffer; dann Freunde, Gilde, Letzte.
+function Mail.Suggest(text, max)
+    local q = Trim(text):lower()
+    max = max or 8
+    local seen, hits = {}, {}
+    local function Add(list, src)
+        for _, nm in ipairs(list) do
+            local key = nm:lower()
+            if not seen[key] and not IsSelf(nm) then
+                local pos = key:find(q, 1, true)
+                if q == "" or pos then
+                    seen[key] = true
+                    -- Rang: Beginn des Namens (1) oder eines Wortes (2) vor Teiltreffer (3)
+                    local rank = 3
+                    if q == "" or pos == 1 then rank = 1
+                    elseif key:sub(pos - 1, pos - 1) == " " then rank = 2 end
+                    hits[#hits + 1] = { name = nm, src = src, rank = rank, n = #hits }
+                end
+            end
+        end
+    end
+    Add(Mail.FriendNames(), "friend")
+    Add(Mail.GuildNames(), "guild")
+    Add((Mail.db and Mail.db.recipients) or {}, "recent")
+    table.sort(hits, function(a, b)
+        if a.rank ~= b.rank then return a.rank < b.rank end
+        return a.n < b.n
+    end)
+    local out = {}
+    for i = 1, math.min(max, #hits) do out[i] = { name = hits[i].name, src = hits[i].src } end
+    return out
 end
 
 ------------------------------------------------------------------------
@@ -715,6 +807,8 @@ local function ClearAttachment()
         if CursorFilled() then pcall(ClearCursor) end
     end
 end
+
+Mail.ClearAttachment = ClearAttachment
 
 local function FindStack(item)
     local fallback

@@ -24,6 +24,10 @@ local SelectTab
 local picks = {}          -- Senden-Reiter: gewaehlte Staepel { id, count, key }
 local picker
 
+local function After(t, fn)
+    if C_Timer and C_Timer.After then C_Timer.After(t, fn) else pcall(fn) end
+end
+
 -- Breite einer Zeile: aus dem Rahmen gelesen, nicht von der Kindbreite abhaengig (die ist beim ersten Zeichnen manchmal zu klein)
 local function RowWidth(scroll, minW)
     local w = scroll and scroll.GetWidth and scroll:GetWidth() or 0
@@ -661,6 +665,55 @@ local function BuildSend(parent)
     })
     dd:SetPoint("LEFT", toBox, "RIGHT", 8, 0)
 
+    -- Namensvorschlaege (Freunde, Gilde, letzte Empfaenger) direkt unter dem Feld
+    local sug = UI.CreatePanel(f, "bgDeep", "gold")
+    sug:SetPoint("TOPLEFT", toBox, "BOTTOMLEFT", 0, 0)
+    sug:SetSize(300, 10)
+    sug:SetFrameStrata("DIALOG")
+    sug:SetFrameLevel(f:GetFrameLevel() + 20)
+    sug:EnableMouse(true)
+    sug:Hide()
+    sug.rows = {}
+    local function HideSuggest() sug:Hide() end
+    local function PickSuggest(name)
+        toBox:Set(name)
+        HideSuggest()
+        toEdit:ClearFocus()
+        if f:IsShown() and f.Refresh then f.Refresh() end
+    end
+    local function ShowSuggest()
+        local text = toEdit:GetText() or ""
+        local list
+        if text:gsub("%s", "") == "" then
+            list = {}
+            for i, n in ipairs(Mail:Recipients()) do if i <= 8 then list[#list + 1] = { name = n, src = "recent" } end end
+        else
+            list = Mail.Suggest(text, 8)
+        end
+        if #list == 0 or (#list == 1 and list[1].name:lower() == Mail.CleanName(text):lower()) then return HideSuggest() end
+        for i, it in ipairs(list) do
+            local row = sug.rows[i]
+            if not row then
+                row = UI.CreateButton(sug, "", 292, 20, nil, "default")
+                row:SetPoint("TOPLEFT", sug, "TOPLEFT", 4, -4 - (i - 1) * 22)
+                sug.rows[i] = row
+            end
+            row.name = it.name
+            row:SetLabel(it.name .. "  |cff8a8f9a" .. T("MAIL_SRC_" .. it.src) .. "|r")
+            row:SetScript("OnClick", function(self) PickSuggest(self.name) end)
+            row:Show()
+        end
+        for i = #list + 1, #sug.rows do sug.rows[i]:Hide() end
+        sug.first = list[1].name
+        sug:SetHeight(#list * 22 + 8)
+        sug:Show()
+    end
+    toEdit:SetScript("OnEditFocusGained", function() Mail.RequestGuild() ShowSuggest() end)
+    toEdit:SetScript("OnEditFocusLost", function() After(0.2, function() if not toEdit:HasFocus() then HideSuggest() end end) end)
+    toEdit:SetScript("OnTabPressed", function() if sug:IsShown() and sug.first then PickSuggest(sug.first) end end)
+    toEdit:SetScript("OnEscapePressed", function(self) HideSuggest() self:ClearFocus() end)
+    f:HookScript("OnHide", HideSuggest)
+
     Heading(f, T("MAIL_SUBJECT"), 0, -54)
     local subjBox = MakeEdit(f, 616, nil, 64)   -- genauso breit wie das Textfeld (dessen Rollbalken nimmt 12 ab)
     subjBox:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -74)
@@ -816,7 +869,10 @@ local function BuildSend(parent)
     end
 
     for _, b in ipairs({ goldBox, silverBox, copperBox, subjBox }) do b.onChange = function() if f:IsShown() then f.Refresh() end end end
-    toBox.onChange = function() if f:IsShown() then f.Refresh() end end
+    toBox.onChange = function()
+        if toEdit:HasFocus() then ShowSuggest() end
+        if f:IsShown() then f.Refresh() end
+    end
     addBtn:SetScript("OnClick", function() OpenPicker("send", nil, f.Refresh) end)
     send:SetScript("OnClick", function()
         local jobs = Mail:BuildCompose(Form())
@@ -997,6 +1053,7 @@ function SelectTab(id)
         end
         if tabs[def.id] then tabs[def.id]:SetActive(def.id == id) end
     end
+    if Mail.SyncBlizzardTab then Mail.SyncBlizzardTab() end
 end
 
 local function UpdateFooter()
@@ -1118,10 +1175,60 @@ function Drop.send(id)
     SelectTab("send")
 end
 
--- Frueher wurde hier UseContainerItem ersetzt, damit ein Rechtsklick im Inventar das Item auf die Sendeliste setzt.
--- Das verunreinigt (Taint) die Blizzard-Oberflaeche: auf Forever kam beim Benutzen von Items
--- "ADDON_ACTION_FORBIDDEN ... UseContainerItem". Darum entfernt. Items kommen per Ziehen auf die Sendefelder
--- oder ueber die Auswahl "Items waehlen".
+-- Rechtsklick auf ein Item in den Taschen: nur bei offenem Postfach und offenem Senden-Reiter.
+-- UseContainerItem wird NICHT ersetzt (das gab Taint: "ADDON_ACTION_FORBIDDEN ... UseContainerItem"), sondern nur nachgelesen
+-- (hooksecurefunc). Damit der Client das Item in den Briefplatz legt, steht der Senden-Reiter des Blizzard-Postfachs im
+-- Hintergrund auf "Senden". Haengt danach etwas am Briefplatz, nehmen wir es zurueck in die Tasche und setzen den Stapel auf unsere Liste.
+local function SendTabActive()
+    return Mail.open and Mail.Replacing() and window and window:IsShown() and current == "send"
+        and not Mail.busy and not Mail.BoardBusy()
+end
+
+local function SyncBlizzardTab()
+    if not Mail.open or not _G.MailFrame or not _G.MailFrameTab_OnClick then return end
+    local want = (current == "send") and 2 or 1
+    local tab = _G["MailFrameTab" .. want]
+    local shown = _G.SendMailFrame and SendMailFrame.IsShown and SendMailFrame:IsShown()
+    if tab and ((want == 2) ~= (shown and true or false)) then pcall(MailFrameTab_OnClick, tab, want) end
+end
+Mail.SyncBlizzardTab = SyncBlizzardTab
+
+local function StackAt(bag, slot)
+    local seen = {}
+    for _, s in ipairs(Mail.BagStacks()) do
+        local base = s.id .. ":" .. s.count
+        seen[base] = (seen[base] or 0) + 1
+        if s.bag == bag and s.slot == slot then return s.id, s.count, base .. ":" .. seen[base] end
+    end
+end
+
+function Mail.RightClickAdd(bag, slot)
+    if not SendTabActive() or not bag or not slot then return false end
+    local id, count, key = StackAt(bag, slot)
+    if not id then return false end
+    local attached = _G.GetSendMailItem and select(1, GetSendMailItem(1))
+    if not attached or attached == "" then
+        if Mail.db and Mail.db.settings.chat and FW.Print then FW:Print(T("MAIL_RC_FAIL")) end
+        return false
+    end
+    if Mail.ClearAttachment then Mail.ClearAttachment() end
+    for _, p in ipairs(picks) do if p.key == key then return true end end
+    picks[#picks + 1] = { id = id, count = count, key = key }
+    local info = Util.GetItem and Util.GetItem(id)
+    if Mail.db and Mail.db.settings.chat and FW.Print then FW:Print(string.format(T("MAIL_RC_ADDED"), (info and info.name) or ("#" .. id))) end
+    if panes.send and panes.send.Refresh then panes.send.Refresh() end
+    return true
+end
+
+local function InstallRightClick()
+    if Mail.rcHooked then return end
+    Mail.rcHooked = true
+    local function H(bag, slot) pcall(Mail.RightClickAdd, bag, slot) end
+    if hooksecurefunc then
+        if _G.UseContainerItem then pcall(hooksecurefunc, "UseContainerItem", H) end
+        if _G.C_Container and C_Container.UseContainerItem then pcall(hooksecurefunc, C_Container, "UseContainerItem", H) end
+    end
+end
 
 local function RefreshCurrent()
     local pane = panes[current]
@@ -1131,6 +1238,7 @@ end
 
 local function ShowWindow()
     local ok, err = pcall(function()
+        InstallRightClick()
         if not window then BuildWindow() end
         window:Show()
         SelectTab(current)
