@@ -365,6 +365,22 @@ local function BuildInbox(parent)
     d.attach:SetPoint("RIGHT", d, "RIGHT", -12, 0)
     d.attach:SetWordWrap(false)
     d.bodyScroll = UI.CreateScrollFrame(d)
+    -- Anhang als Item: Symbol, Anzahl, Name in Qualitaetsfarbe, Tooltip beim Darueberfahren
+    d.item = CreateFrame("Frame", nil, d)
+    d.item:SetSize(36, 36)
+    d.item:SetPoint("TOPLEFT", d, "TOPLEFT", 12, -72)
+    d.item.icon = d.item:CreateTexture(nil, "ARTWORK")
+    d.item.icon:SetAllPoints(d.item)
+    d.item.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    d.item.count = UI.CreateLabel(d.item, "", { size = 11, justify = "RIGHT" })
+    d.item.count:SetPoint("BOTTOMRIGHT", d.item, "BOTTOMRIGHT", -2, 2)
+    d.item.name = UI.CreateLabel(d, "", { size = 13 })
+    d.item.name:SetPoint("LEFT", d.item, "RIGHT", 10, 0)
+    d.item.name:SetPoint("RIGHT", d, "RIGHT", -12, 0)
+    d.item.name:SetWordWrap(false)
+    d.item.name:SetJustifyH("LEFT")
+    Tooltip(d.item)
+    d.item:Hide()
     d.bodyScroll:SetPoint("TOPLEFT", d, "TOPLEFT", 12, -76)
     d.bodyScroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -12, 132)
     d.body = UI.CreateLabel(d.bodyScroll.child, "", { size = 12, justifyV = "TOP" })
@@ -544,9 +560,20 @@ local function BuildInbox(parent)
         d.subj:SetText(cur.subject ~= "" and Mail.ColorSubject(cur.subject) or T("MAIL_ARCH_NOSUBJECT"))
         d.meta:SetText(string.format(T("MAIL_DETAIL_FROM"), cur.sender) .. (cur.days and ("   " .. string.format(T("MAIL_ROW_DAYS"), math.floor(cur.days))) or ""))
         local parts = {}
-        if cur.hasItem then parts[#parts + 1] = string.format(T("MAIL_ATTACH_ITEM"), (cur.itemName or "?") .. ((cur.itemCount or 1) > 1 and (" x" .. cur.itemCount) or "")) end
+        if cur.hasItem then
+            d.item.inboxIndex = cur.i
+            d.item.icon:SetTexture(cur.itemTex or "Interface\\Icons\\INV_Misc_QuestionMark")
+            d.item.count:SetText((cur.itemCount or 1) > 1 and tostring(cur.itemCount) or "")
+            local nm = cur.itemName or "?"
+            d.item.name:SetText(cur.itemQuality and ("|cff" .. UI.RarityHex(cur.itemQuality) .. nm .. "|r") or nm)
+            d.item:Show()
+            d.item.name:Show()
+        else
+            d.item:Hide()
+            d.item.name:Hide()
+        end
         if cur.money > 0 then parts[#parts + 1] = string.format(T("MAIL_ATTACH_GOLD"), Mail.Money(cur.money)) end
-        local attach = #parts > 0 and table.concat(parts, "   ") or T("MAIL_ATTACH_NONE")
+        local attach = #parts > 0 and table.concat(parts, "   ") or (cur.hasItem and "" or T("MAIL_ATTACH_NONE"))
         if cur.cod > 0 then attach = attach .. "   |cffff7060" .. string.format(T("MAIL_ATTACH_COD"), Mail.Money(cur.cod)) .. "|r" end
         d.attach:SetText(attach)
         local text = f.bodyText or ""
@@ -554,6 +581,9 @@ local function BuildInbox(parent)
         local bw = math.max(200, (d.bodyScroll:GetWidth() or 0) - 22)
         local h = UI.FitLabel(d.body, bw, 20)
         d.bodyScroll:SetContentHeight(h + 8)
+        d.bodyScroll:ClearAllPoints()
+        d.bodyScroll:SetPoint("TOPLEFT", d, "TOPLEFT", 12, cur.hasItem and -114 or -76)
+        d.bodyScroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -12, 132)
 
         local busy = Mail.busy ~= nil
         local canTake = (cur.money > 0 and cur.cod == 0) or cur.hasItem

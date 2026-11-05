@@ -384,8 +384,9 @@ function Mail.ReadInbox()
                 returned = wasReturned and true or false, canReply = not (canReply == false or canReply == 0),
             }
             if m.hasItem and GetInboxItem then
-                local ok2, name, tex, count = pcall(GetInboxItem, i)
+                local ok2, name, tex, count, quality = pcall(GetInboxItem, i)
                 if ok2 then m.itemName, m.itemTex, m.itemCount = name, tex, tonumber(count) or 1 end
+                if ok2 and tonumber(quality) then m.itemQuality = tonumber(quality) end
             end
             m.sig = table.concat({ m.sender, m.subject, m.money, m.cod, tostring(m.itemName), tostring(m.itemCount) }, "|")
             seen[m.sig] = (seen[m.sig] or 0) + 1
