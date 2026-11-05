@@ -2,6 +2,8 @@
 
 **Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.0 · Interface 16001 (World of Warcraft: Forever).
 
+![Mail](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
+
 ## Inhalt · Contents
 - [Deutsch](#deutsch)
 - [English](#english)
