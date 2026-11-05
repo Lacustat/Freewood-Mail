@@ -1206,12 +1206,11 @@ function Mail.RightClickAdd(bag, slot)
     if not SendTabActive() or not bag or not slot then return false end
     local id, count, key = StackAt(bag, slot)
     if not id then return false end
+    -- hat der Client das Item in den Briefplatz gelegt? Dann zurueck in die Tasche; sonst liegt es noch an seinem Platz (nicht benutzt)
     local attached = _G.GetSendMailItem and select(1, GetSendMailItem(1))
-    if not attached or attached == "" then
-        if Mail.db and Mail.db.settings.chat and FW.Print then FW:Print(T("MAIL_RC_FAIL")) end
-        return false
+    if attached and attached ~= "" then
+        if Mail.ClearAttachment then Mail.ClearAttachment() end
     end
-    if Mail.ClearAttachment then Mail.ClearAttachment() end
     for _, p in ipairs(picks) do if p.key == key then return true end end
     picks[#picks + 1] = { id = id, count = count, key = key }
     local info = Util.GetItem and Util.GetItem(id)
