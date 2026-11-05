@@ -1118,33 +1118,10 @@ function Drop.send(id)
     SelectTab("send")
 end
 
-local function Intercept(bag, slot)
-    if not (Mail.open and Mail.Replacing() and window and window:IsShown()) then return false end
-    if Mail.CursorFilled() then return false end
-    if Mail.busy then return true end
-    local id, count, key = StackKey(tonumber(bag), tonumber(slot))
-    if not id then return true end
-    local found
-    for k, pk in ipairs(picks) do
-        if pk.key == key then found = k end
-    end
-    if found then table.remove(picks, found) else picks[#picks + 1] = { id = id, count = count, key = key } end
-    SelectTab("send")
-    if picker and picker:IsShown() then picker:Fill() end
-    return true
-end
-
-local function WrapUse(owner, name)
-    local orig = owner and owner[name]
-    if type(orig) ~= "function" then return end
-    owner[name] = function(bag, slot, ...)
-        local ok, handled = pcall(Intercept, bag, slot)
-        if ok and handled then return end
-        return orig(bag, slot, ...)
-    end
-end
-WrapUse(_G, "UseContainerItem")
-if _G.C_Container then WrapUse(_G.C_Container, "UseContainerItem") end
+-- Frueher wurde hier UseContainerItem ersetzt, damit ein Rechtsklick im Inventar das Item auf die Sendeliste setzt.
+-- Das verunreinigt (Taint) die Blizzard-Oberflaeche: auf Forever kam beim Benutzen von Items
+-- "ADDON_ACTION_FORBIDDEN ... UseContainerItem". Darum entfernt. Items kommen per Ziehen auf die Sendefelder
+-- oder ueber die Auswahl "Items waehlen".
 
 local function RefreshCurrent()
     local pane = panes[current]

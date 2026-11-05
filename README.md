@@ -1,6 +1,6 @@
 # Freewood-Mail
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.1 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.2 · Interface 16001 (World of Warcraft: Forever).
 
 ![Mail](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
 
@@ -36,7 +36,7 @@ Den Ordner `Freewood-Mail` nach `World of Warcraft\_forever_\Interface\AddOns\` 
 ### Hinweise
 
 - Aus der OctoWoW-Version übernommen (nur Code). Im Spiel noch nicht geprüft; die Anbindung an Brett ist noch nicht vollständig (Brett hat in Forever noch den älteren Stand).
-- Das Blizzard-Fenster wird nicht mehr abgesichert (Löschen von Nachnahme-Briefen): Das Ersetzen von `DeleteInboxItem` verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
+- Mail ersetzt keine Blizzard-Funktionen mehr (`DeleteInboxItem`, `UseContainerItem`): Das verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Dadurch gibt es keinen Rechtsklick-Anhängen mehr (Items per Ziehen oder „Items hinzufügen“) und keinen Schutz vor dem Löschen von Nachnahme-Briefen im Blizzard-Fenster. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
 
 ### Lizenz
 GPL-3.0, siehe `LICENSE`.
@@ -71,7 +71,7 @@ Copy the folder `Freewood-Mail` to `World of Warcraft\_forever_\Interface\AddOns
 ### Notes
 
 - Taken over from the OctoWoW version (code only). Not yet verified in game; the link to Brett is not complete yet (Brett is still at the older state in Forever).
-- The Blizzard window is no longer guarded against deleting cash-on-delivery mails: replacing `DeleteInboxItem` caused “Freewood-Mail was blocked” when using items on Forever. Our own window still protects them.
+- Mail no longer replaces Blizzard functions (`DeleteInboxItem`, `UseContainerItem`): that caused “Freewood-Mail was blocked” when using items on Forever. As a result there is no right-click attaching any more (drag items or use “Add items”) and no protection against deleting cash-on-delivery mails in the Blizzard window.
 
 ### License
 GPL-3.0, see `LICENSE`.
