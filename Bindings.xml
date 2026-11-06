@@ -1,0 +1,6 @@
+<Bindings>
+    <Binding name="FREEWOOD_MAIL_ARCHIVE" header="FREEWOOD_MAIL" category="ADDONS">
+        local FW = _G.Freewood
+        if FW and FW.Mail and FW.Mail.OpenArchive then FW.Mail.OpenArchive(true) end
+    </Binding>
+</Bindings>
