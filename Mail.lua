@@ -329,6 +329,72 @@ end
 -- Posteingang
 ------------------------------------------------------------------------
 
+-- Anhaenge eines Briefs lesen. Retail liefert GetInboxItem(Brief, Anhang) = Name, ItemID, Symbol, Anzahl, Qualitaet;
+-- Vanilla liefert Name, Symbol, Anzahl, Qualitaet. Beide Formen werden erkannt, fehlende Namen ueber den Item-Link nachgeladen.
+function Mail.ReadAttachment(i, a)
+    local ok, name, r2, r3, r4, r5 = pcall(GetInboxItem, i, a)
+    if not ok then return nil end
+    local att = {}
+    if type(r2) == "string" or (type(r3) == "number" and r3 <= 1000 and type(r4) == "number" and r4 <= 8 and type(r2) ~= "number") then
+        att.name, att.tex, att.count, att.quality = name, r2, r3, r4
+    elseif type(r3) == "string" or (type(r3) == "number" and r3 > 1000) then
+        att.name, att.id, att.tex, att.count, att.quality = name, r2, r3, r4, r5
+    elseif type(r2) == "number" and type(r3) == "number" and type(r4) == "number" then
+        -- beides moeglich (alles Zahlen): Retail hat die Anzahl an vierter Stelle
+        att.name, att.id, att.tex, att.count, att.quality = name, r2, r3, r4, r5
+    else
+        att.name, att.tex, att.count, att.quality = name, r2, r3, r4
+    end
+    att.count = tonumber(att.count)
+    att.quality = tonumber(att.quality)
+    att.id = tonumber(att.id)
+    if GetInboxItemLink then
+        local okL, link = pcall(GetInboxItemLink, i, a)
+        if okL and type(link) == "string" then
+            att.link = link
+            att.id = att.id or tonumber(string.match(link, "item:(%d+)"))
+            if not att.name then att.name = string.match(link, "%[(.-)%]") end
+        end
+    end
+    if not att.name and att.id then
+        local ci = _G.C_Item
+        local getName = ci and ci.GetItemNameByID
+        if getName then
+            local okN, n = pcall(getName, att.id)
+            if okN and type(n) == "string" then att.name = n end
+        end
+        if not att.name and ci and ci.RequestLoadItemDataByID then pcall(ci.RequestLoadItemDataByID, att.id) end
+    end
+    if not att.tex and att.id and _G.C_Item and _G.C_Item.GetItemIconByID then
+        local okI, icon = pcall(_G.C_Item.GetItemIconByID, att.id)
+        if okI then att.tex = icon end
+    end
+    if not att.name and not att.id and not att.count then return nil end
+    return att
+end
+
+function Mail.ReadAttachments(m)
+    local items = {}
+    for a = 1, 12 do
+        local att = Mail.ReadAttachment(m.i, a)
+        if not att then break end
+        items[#items + 1] = att
+    end
+    m.items = items
+    local f = items[1]
+    if f then
+        m.itemName, m.itemTex, m.itemCount, m.itemQuality, m.itemID = f.name, f.tex, f.count or 1, f.quality, f.id
+    end
+end
+
+-- "Leichtes Leder x80", bei mehreren Anhaengen "Leichtes Leder x80 +2"
+function Mail.ItemLabel(m)
+    local text = (m.itemName or "?") .. (((m.itemCount or 1) > 1) and (" x" .. m.itemCount) or "")
+    local extra = m.items and (#m.items - 1) or 0
+    if extra > 0 then text = text .. " +" .. extra end
+    return text
+end
+
 -- Liste der Briefe: { i, sender, subject, money, cod, days, hasItem, itemName, itemTex, itemCount, sig, key, take, why }
 -- Grosse Postfaecher werden in Haeppchen eingelesen (wie die Seiten des Spiels: 7 je Schritt, mit Pause), sonst haengt der Client.
 local CHUNK, LOAD_GAP = 7, 0.45
@@ -384,9 +450,7 @@ function Mail.ReadInbox()
                 returned = wasReturned and true or false, canReply = not (canReply == false or canReply == 0),
             }
             if m.hasItem and GetInboxItem then
-                local ok2, name, tex, count, quality = pcall(GetInboxItem, i)
-                if ok2 then m.itemName, m.itemTex, m.itemCount = name, tex, tonumber(count) or 1 end
-                if ok2 and tonumber(quality) then m.itemQuality = tonumber(quality) end
+                Mail.ReadAttachments(m)
             end
             m.sig = table.concat({ m.sender, m.subject, m.money, m.cod, tostring(m.itemName), tostring(m.itemCount) }, "|")
             seen[m.sig] = (seen[m.sig] or 0) + 1
@@ -444,7 +508,7 @@ local function NoteTaken(m, what)
     if what == "money" then
         t.money = t.money + m.money
     else
-        t.items[#t.items + 1] = (m.itemName or "?") .. ((m.itemCount or 1) > 1 and (" x" .. m.itemCount) or "")
+        t.items[#t.items + 1] = Mail.ItemLabel(m)
     end
 end
 

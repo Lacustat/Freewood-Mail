@@ -109,7 +109,8 @@ local function Tooltip(frame, itemID, inboxIndex)
         local id = self.itemID
         if idx and GameTooltip.SetInboxItem then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            pcall(GameTooltip.SetInboxItem, GameTooltip, idx)
+            local okT = pcall(GameTooltip.SetInboxItem, GameTooltip, idx, 1)
+            if not okT and id then pcall(GameTooltip.SetItemByID, GameTooltip, id) end
             GameTooltip:Show()
         elseif id then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -564,7 +565,8 @@ local function BuildInbox(parent)
             d.item.inboxIndex = cur.i
             d.item.icon:SetTexture(cur.itemTex or "Interface\\Icons\\INV_Misc_QuestionMark")
             d.item.count:SetText((cur.itemCount or 1) > 1 and tostring(cur.itemCount) or "")
-            local nm = cur.itemName or "?"
+            d.item.itemID = cur.itemID
+            local nm = (cur.itemName or "?") .. ((cur.items and #cur.items > 1) and (" +" .. (#cur.items - 1)) or "")
             d.item.name:SetText(cur.itemQuality and ("|cff" .. UI.RarityHex(cur.itemQuality) .. nm .. "|r") or nm)
             d.item:Show()
             d.item.name:Show()
@@ -630,7 +632,7 @@ local function BuildInbox(parent)
             end
             row.l1:SetText(m.subject ~= "" and Mail.ColorSubject(m.subject) or m.sender)
             local parts = {}
-            if m.hasItem then parts[#parts + 1] = (m.itemName or "?") .. ((m.itemCount or 1) > 1 and (" x" .. m.itemCount) or "") end
+            if m.hasItem then parts[#parts + 1] = Mail.ItemLabel(m) end
             if m.money > 0 then parts[#parts + 1] = Mail.Money(m.money) end
             local text
             if m.cod > 0 then
