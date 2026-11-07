@@ -941,6 +941,19 @@ local function PrepStep(p, now)
         end
         pcall(ClearCursor)
         p.bag, p.slot = s.bag, s.slot
+        -- Schnellster Weg zuerst: "Benutzen" (Rechtsklick), das Spiel haengt das Item bei offenem Senden-Reiter selbst an.
+        -- Hat das einmal geklappt, merkt sich der Mailer den Weg; klappt es nicht, geht es mit Aufnehmen/Klick weiter.
+        if not p.way and Mail.attachWay ~= "pick" then
+            local use = (C_Container and C_Container.UseContainerItem) or _G.UseContainerItem
+            if use then
+                p.way = "use"
+                local okUse, err = pcall(use, s.bag, s.slot)
+                if not okUse then Trace("Benutzen FEHLER: " .. tostring(err)) end
+                p.step, p.at = "usecheck", now + 0.5
+                return "wait"
+            end
+        end
+        p.way = "pick"
         pcall((C_Container and C_Container.PickupContainerItem) or PickupContainerItem, s.bag, s.slot)
         if not ClickSendMailItemButton then pcall(ClearCursor) return "fail", "noapi" end
         -- der Cursor zeigt das Item erst nach einer Pause (Antwort des Servers): erst dann pruefen
@@ -970,8 +983,17 @@ local function PrepStep(p, now)
         return "wait"
     elseif p.step == "usecheck" then
         if AttachedName() then
+            if Mail.attachWay ~= "use" then Trace("Anhaengen per Benutzen klappt, merke den Weg") end
+            Mail.attachWay = "use"
             SetMoney(job)
             return "ok"
+        end
+        if p.way == "use" and not p.used then
+            -- Benutzen hat nichts angehaengt: Aufnehmen und Klick probieren
+            Trace("Benutzen hat nichts angehaengt, versuche Aufnehmen")
+            p.way, p.step, p.at = "pick", "pick", now + 0.1
+            if Mail.attachWay == "use" then Mail.attachWay = nil end
+            return "wait"
         end
         return "fail", PickupDiag(p)
     elseif p.step == "click" then
@@ -984,6 +1006,7 @@ local function PrepStep(p, now)
         if AttachedName() then
             if CursorFilled() then pcall(ClearCursor) end
             SetMoney(job)
+            Mail.attachWay = "pick"
             return "ok"
         end
         pcall(ClearCursor)
