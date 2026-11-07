@@ -912,6 +912,17 @@ end
 -- (so macht es auch das Creator-Modul): aufnehmen -> Pause -> Klick auf Platz 1 -> Pause -> pruefen, bis zu 3 Versuche.
 -- Rueckgabe: "wait" (weiter), "ok" oder "fail", Grund
 local ATTACH_TRIES = 3
+local function PickupDiag(p)
+    local ginfo = _G.GetCursorInfo and tostring((_G.GetCursorInfo())) or "-"
+    local hasFn = _G.CursorHasItem and tostring(CursorHasItem()) or "keine Funktion"
+    local locked = "?"
+    for _, st in ipairs(Mail.BagStacks()) do
+        if st.bag == p.bag and st.slot == p.slot then locked = tostring(st.locked) end
+    end
+    return string.format("pickup, Senden-Reiter %s, Tasche %s/%s, gesperrt %s, CursorHasItem %s, GetCursorInfo %s",
+        SendTabShown() and "an" or "aus", tostring(p.bag), tostring(p.slot), locked, hasFn, ginfo)
+end
+
 local function PrepStep(p, now)
     local job = p.job
     if p.step == "pick" then
@@ -942,11 +953,27 @@ local function PrepStep(p, now)
         end
         p.picks = (p.picks or 0) + 1
         if p.picks >= ATTACH_TRIES then
-            return "fail", string.format("pickup, Senden-Reiter %s, Tasche %s/%s", SendTabShown() and "an" or "aus", tostring(p.bag), tostring(p.slot))
+            -- Aufnehmen greift nicht: Rechtsklick-Weg (Benutzen) versuchen, das Spiel haengt das Item bei offenem Senden-Reiter selbst an
+            local use = (C_Container and C_Container.UseContainerItem) or _G.UseContainerItem
+            if use and not p.used then
+                p.used = true
+                pcall(ClearCursor)
+                local okUse, err = pcall(use, p.bag, p.slot)
+                Trace(string.format("Aufnehmen ohne Erfolg, Benutzen %s%s", okUse and "aufgerufen" or "FEHLER", okUse and "" or (": " .. tostring(err))))
+                p.step, p.at = "usecheck", now + 0.5
+                return "wait"
+            end
+            return "fail", PickupDiag(p)
         end
         Trace(string.format("Cursor leer nach Aufnehmen (Versuch %d von %d), nochmal", p.picks, ATTACH_TRIES))
         p.step, p.at = "pick", now + 0.4
         return "wait"
+    elseif p.step == "usecheck" then
+        if AttachedName() then
+            SetMoney(job)
+            return "ok"
+        end
+        return "fail", PickupDiag(p)
     elseif p.step == "click" then
         p.tries = p.tries + 1
         -- Versuch 2 ohne Platznummer, falls der Client sie nicht kennt
