@@ -888,6 +888,20 @@ local function FindStack(item)
     return fallback or lockedOne
 end
 
+-- Das Blizzard-Postfach liegt unsichtbar unter unserem Fenster; Items legen sich nur in den Briefplatz, wenn dort der
+-- Senden-Reiter aktiv ist. Darum vor dem Anhaengen sicherstellen (wie im Creator-Modul).
+local function SendTabShown()
+    return _G.SendMailFrame and SendMailFrame.IsShown and SendMailFrame:IsShown() and true or false
+end
+
+local function EnsureSendTab()
+    if SendTabShown() then return true end
+    if _G.MailFrameTab2 and MailFrameTab2.Click then pcall(MailFrameTab2.Click, MailFrameTab2)
+    elseif _G.MailFrameTab_OnClick and _G.MailFrame then pcall(MailFrameTab_OnClick, MailFrame, 2) end
+    return SendTabShown()
+end
+Mail.EnsureSendTab = EnsureSendTab
+
 -- Geld/Nachnahme setzen (nach dem Anhaengen)
 local function SetMoney(job)
     if SetSendMailMoney then pcall(SetSendMailMoney, (job.cod or 0) > 0 and 0 or (job.money or 0)) end
@@ -901,6 +915,10 @@ local ATTACH_TRIES = 3
 local function PrepStep(p, now)
     local job = p.job
     if p.step == "pick" then
+        if not EnsureSendTab() and not p.tabSaid then
+            p.tabSaid = true
+            Trace("Senden-Reiter des Blizzard-Postfachs liess sich nicht aktivieren")
+        end
         if CursorFilled() then pcall(ClearCursor) end
         ClearAttachment()
         local s = FindStack(job.item)
@@ -911,6 +929,7 @@ local function PrepStep(p, now)
             return "wait"
         end
         pcall(ClearCursor)
+        p.bag, p.slot = s.bag, s.slot
         pcall((C_Container and C_Container.PickupContainerItem) or PickupContainerItem, s.bag, s.slot)
         if not ClickSendMailItemButton then pcall(ClearCursor) return "fail", "noapi" end
         -- der Cursor zeigt das Item erst nach einer Pause (Antwort des Servers): erst dann pruefen
@@ -922,7 +941,9 @@ local function PrepStep(p, now)
             return "wait"
         end
         p.picks = (p.picks or 0) + 1
-        if p.picks >= ATTACH_TRIES then return "fail", "pickup" end
+        if p.picks >= ATTACH_TRIES then
+            return "fail", string.format("pickup, Senden-Reiter %s, Tasche %s/%s", SendTabShown() and "an" or "aus", tostring(p.bag), tostring(p.slot))
+        end
         Trace(string.format("Cursor leer nach Aufnehmen (Versuch %d von %d), nochmal", p.picks, ATTACH_TRIES))
         p.step, p.at = "pick", now + 0.4
         return "wait"
@@ -1022,7 +1043,7 @@ function Mail:StepSend()
         s.failed = s.failed + 1
         s.stage, s.prep, s.nextAt = "next", nil, now + 0.2
         Trace(string.format("Brief %d (%s) nicht vorbereitet: %s", s.i, JobLabel(job), tostring(why)))
-        if why == "attach" or why == "gone" or why == "pickup" or why == "noapi" then
+        if tostring(why):match("^(%a+)") then
             Say(string.format(FW.L.MAIL_SEND_FAIL_ATTACH, JobLabel(job)) .. " (" .. tostring(why) .. ")")
         end
         FW:Fire("MAIL_STATE")
