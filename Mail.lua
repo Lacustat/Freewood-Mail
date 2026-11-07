@@ -876,36 +876,64 @@ end
 Mail.ClearAttachment = ClearAttachment
 
 local function FindStack(item)
-    local fallback
+    local fallback, lockedOne
     for _, s in ipairs(Mail.BagStacks()) do
         if s.id == item.id and not s.locked then
             if s.count == item.count then return s end
             fallback = fallback or s
+        elseif s.id == item.id then
+            lockedOne = lockedOne or s   -- gesperrt (Server arbeitet noch): PrepStep wartet kurz
         end
     end
-    return fallback
+    return fallback or lockedOne
 end
 
--- Bereitet einen Brief vor. Rueckgabe: true oder false, Grund
-local function Prepare(job)
-    if CursorFilled() then return false, "cursor" end
-    ClearAttachment()
-    if job.item then
-        local s = FindStack(job.item)
-        if not s then return false, "gone" end
-        pcall(ClearCursor)
-        pcall((C_Container and C_Container.PickupContainerItem) or PickupContainerItem, s.bag, s.slot)
-        if not CursorFilled() then return false, "pickup" end
-        if not ClickSendMailItemButton then pcall(ClearCursor) return false, "noapi" end
-        pcall(ClickSendMailItemButton)
-        if not AttachedName() then
-            pcall(ClearCursor)
-            return false, "attach"
-        end
-    end
+-- Geld/Nachnahme setzen (nach dem Anhaengen)
+local function SetMoney(job)
     if SetSendMailMoney then pcall(SetSendMailMoney, (job.cod or 0) > 0 and 0 or (job.money or 0)) end
     if SetSendMailCOD then pcall(SetSendMailCOD, job.cod or 0) end
-    return true
+end
+
+-- Anhaengen in Schritten, weil der Server frisch bewegte Items kurz sperrt und den Anhang erst nach einer Pause zeigt
+-- (so macht es auch das Creator-Modul): aufnehmen -> Pause -> Klick auf Platz 1 -> Pause -> pruefen, bis zu 3 Versuche.
+-- Rueckgabe: "wait" (weiter), "ok" oder "fail", Grund
+local ATTACH_TRIES = 3
+local function PrepStep(p, now)
+    local job = p.job
+    if p.step == "pick" then
+        if CursorFilled() then pcall(ClearCursor) end
+        ClearAttachment()
+        local s = FindStack(job.item)
+        if not s then return "fail", "gone" end
+        if s.locked and now < (p.lockUntil or (now + 3)) then
+            p.lockUntil = p.lockUntil or (now + 3)
+            p.at = now + 0.2
+            return "wait"
+        end
+        pcall(ClearCursor)
+        pcall((C_Container and C_Container.PickupContainerItem) or PickupContainerItem, s.bag, s.slot)
+        if not CursorFilled() then return "fail", "pickup" end
+        if not ClickSendMailItemButton then pcall(ClearCursor) return "fail", "noapi" end
+        p.step, p.at = "click", now + 0.25
+        return "wait"
+    elseif p.step == "click" then
+        p.tries = p.tries + 1
+        -- Versuch 2 ohne Platznummer, falls der Client sie nicht kennt
+        if p.tries == 2 then pcall(ClickSendMailItemButton) else pcall(ClickSendMailItemButton, 1) end
+        p.step, p.at = "check", now + 0.35
+        return "wait"
+    else -- check
+        if AttachedName() then
+            if CursorFilled() then pcall(ClearCursor) end
+            SetMoney(job)
+            return "ok"
+        end
+        pcall(ClearCursor)
+        if p.tries >= ATTACH_TRIES then return "fail", "attach" end
+        Trace(string.format("Anhang noch leer (Versuch %d von %d), nochmal", p.tries, ATTACH_TRIES))
+        p.step, p.at, p.lockUntil = "pick", now + 0.4, nil
+        return "wait"
+    end
 end
 
 local function JobLabel(job)
@@ -980,28 +1008,49 @@ function Mail:StepSend()
         end
         return
     end
+    local function Fail(job, why)
+        s.failed = s.failed + 1
+        s.stage, s.prep, s.nextAt = "next", nil, now + 0.2
+        Trace(string.format("Brief %d (%s) nicht vorbereitet: %s", s.i, JobLabel(job), tostring(why)))
+        if why == "attach" or why == "gone" or why == "pickup" or why == "noapi" then
+            Say(string.format(FW.L.MAIL_SEND_FAIL_ATTACH, JobLabel(job)) .. " (" .. tostring(why) .. ")")
+        end
+        FW:Fire("MAIL_STATE")
+    end
+    local function Dispatch(job)
+        s.prep = nil
+        s.ok, s.err, s.deadline, s.stage = false, false, now + SEND_TIMEOUT, "wait"
+        Trace(string.format("Brief %d von %d an %s: %s (Betreff '%s', Nachnahme %d)", s.i, #s.jobs, job.to, JobLabel(job), tostring(job.subject), job.cod or 0))
+        FW:Fire("MAIL_STATE")
+        local okc = pcall(SendMail, job.to, job.subject or "", job.body or "")
+        if not okc then s.err = true end
+    end
+    if s.stage == "prep" then
+        local p = s.prep
+        if now < p.at then return end
+        local state, why = PrepStep(p, now)
+        if state == "ok" then
+            Dispatch(p.job)
+        elseif state == "fail" then
+            Fail(p.job, why)
+        end
+        return
+    end
     if now < s.nextAt then return end
     if CursorFilled() then return end
     s.i = s.i + 1
     local job = s.jobs[s.i]
     if not job then return self:FinishSend("done") end
     s.current = job
-    local ok, why = Prepare(job)
-    if not ok then
-        s.failed = s.failed + 1
-        s.nextAt = now + 0.2
-        Trace(string.format("Brief %d (%s) nicht vorbereitet: %s", s.i, JobLabel(job), tostring(why)))
-        if why == "attach" or why == "gone" or why == "pickup" then
-            Say(string.format(FW.L.MAIL_SEND_FAIL_ATTACH, JobLabel(job)))
-        end
+    if job.item then
+        s.prep = { job = job, step = "pick", at = now, tries = 0 }
+        s.stage = "prep"
         FW:Fire("MAIL_STATE")
         return
     end
-    s.ok, s.err, s.deadline, s.stage = false, false, now + SEND_TIMEOUT, "wait"
-    Trace(string.format("Brief %d von %d an %s: %s (Betreff '%s', Nachnahme %d)", s.i, #s.jobs, job.to, JobLabel(job), tostring(job.subject), job.cod or 0))
-    FW:Fire("MAIL_STATE")
-    local okc = pcall(SendMail, job.to, job.subject or "", job.body or "")
-    if not okc then s.err = true end
+    ClearAttachment()
+    SetMoney(job)
+    Dispatch(job)
 end
 
 -- Fortschritt fuer die Anzeige: i, n, an wen
@@ -1096,7 +1145,7 @@ end
 
 function Mail:AddList(name)
     name = Mail.CleanName(name)
-    if name == "" or name:find("[^%w\128-\255%-]") then return false, "invalid" end
+    if name == "" or name:find("[^%w\128-\255%- ]") then return false, "invalid" end
     if #self.db.lists >= MAX_LISTS then return false, "full" end
     if self:ListFor(name) then return false, "exists" end
     self.db.lists[#self.db.lists + 1] = { name = name, ids = {}, auto = false, gold = false, keep = 0 }
