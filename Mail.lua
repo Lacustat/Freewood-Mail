@@ -912,9 +912,19 @@ local function PrepStep(p, now)
         end
         pcall(ClearCursor)
         pcall((C_Container and C_Container.PickupContainerItem) or PickupContainerItem, s.bag, s.slot)
-        if not CursorFilled() then return "fail", "pickup" end
         if not ClickSendMailItemButton then pcall(ClearCursor) return "fail", "noapi" end
-        p.step, p.at = "click", now + 0.25
+        -- der Cursor zeigt das Item erst nach einer Pause (Antwort des Servers): erst dann pruefen
+        p.step, p.at = "pickcheck", now + 0.3
+        return "wait"
+    elseif p.step == "pickcheck" then
+        if CursorFilled() then
+            p.step, p.at = "click", now + 0.1
+            return "wait"
+        end
+        p.picks = (p.picks or 0) + 1
+        if p.picks >= ATTACH_TRIES then return "fail", "pickup" end
+        Trace(string.format("Cursor leer nach Aufnehmen (Versuch %d von %d), nochmal", p.picks, ATTACH_TRIES))
+        p.step, p.at = "pick", now + 0.4
         return "wait"
     elseif p.step == "click" then
         p.tries = p.tries + 1
