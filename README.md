@@ -1,6 +1,6 @@
 # Freewood-Mail
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.12 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.1.13 · Interface 16001 (World of Warcraft: Forever).
 
 ![Mail](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
 
@@ -38,6 +38,7 @@ Den Ordner `Freewood-Mail` nach `World of Warcraft\_forever_\Interface\AddOns\` 
 
 - Aus der OctoWoW-Version übernommen (nur Code). Im Spiel noch nicht geprüft; die Anbindung an Brett ist noch nicht vollständig (Brett hat in Forever noch den älteren Stand).
 - Mail ersetzt keine Blizzard-Funktionen mehr (`DeleteInboxItem`, `UseContainerItem`): Das verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Dadurch gibt es keinen Rechtsklick-Anhängen mehr (Items per Ziehen oder „Items hinzufügen“) und keinen Schutz vor dem Löschen von Nachnahme-Briefen im Blizzard-Fenster. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
+- 0.1.13: Nach dem Senden verschwinden die verschickten Anhänge aus der Liste im Senden-Reiter (jeder verschickte Brief einzeln; nicht verschickte bleiben stehen). Sind keine Anhänge mehr übrig, werden auch Betreff, Text, Gold und Nachnahme geleert.
 
 ### Lizenz
 GPL-3.0, siehe `LICENSE`.
@@ -73,6 +74,7 @@ Copy the folder `Freewood-Mail` to `World of Warcraft\_forever_\Interface\AddOns
 
 - Taken over from the OctoWoW version (code only). Not yet verified in game; the link to Brett is not complete yet (Brett is still at the older state in Forever).
 - Mail no longer replaces Blizzard functions (`DeleteInboxItem`, `UseContainerItem`): that caused “Freewood-Mail was blocked” when using items on Forever. As a result there is no right-click attaching any more (drag items or use “Add items”) and no protection against deleting cash-on-delivery mails in the Blizzard window.
+- 0.1.13: After sending, the sent attachments disappear from the list in the Send tab (each sent mail individually; unsent ones stay). When no attachments are left, subject, text, gold and cash on delivery are cleared too.
 
 ### License
 GPL-3.0, see `LICENSE`.

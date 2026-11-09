@@ -913,9 +913,18 @@ local function BuildSend(parent)
         if ok then f.pendingClear = #jobs end
         f.Refresh()
     end)
-    FW:On("MAIL_SENT_DONE", function(_, sent, total)
-        if f.pendingClear and sent >= f.pendingClear then
-            for i = #picks, 1, -1 do table.remove(picks, i) end
+    FW:On("MAIL_SENT_DONE", function(_, sent, total, sentJobs, reason)
+        -- Verschickte Anhaenge verschwinden aus der Liste (auch bei teilweisem Erfolg, nicht Verschickte bleiben stehen)
+        local wasSent = {}
+        for _, job in ipairs(sentJobs or {}) do
+            if job.item then wasSent[job.item] = true end
+        end
+        for i = #picks, 1, -1 do
+            if wasSent[picks[i]] then table.remove(picks, i) end
+        end
+        local anySent = (tonumber(sent) or 0) > 0
+        -- Felder leeren, sobald nichts mehr zu senden uebrig ist
+        if anySent and #picks == 0 then
             subjBox:Set("")
             body.edit:SetText("")
             goldBox:Set("") silverBox:Set("") copperBox:Set("")

@@ -1056,7 +1056,7 @@ function Mail:FinishSend(reason)
         Say(string.format(FW.L.MAIL_SEND_STOPPED, s.sent, #s.jobs))
     end
     FW:Fire("MAIL_STATE")
-    FW:Fire("MAIL_SENT_DONE", s.sent, #s.jobs)
+    FW:Fire("MAIL_SENT_DONE", s.sent, #s.jobs, s.sentJobs or {}, reason)
 end
 
 function Mail:StepSend()
@@ -1398,6 +1398,8 @@ function Mail:OnSendSuccess()
     if s and s.stage == "wait" then
         s.ok = true
         s.sent = s.sent + 1
+        s.sentJobs = s.sentJobs or {}
+        if s.current then s.sentJobs[#s.sentJobs + 1] = s.current end
         FW:Fire("MAIL_STATE")
     end
 end
