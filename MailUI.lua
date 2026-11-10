@@ -913,6 +913,14 @@ local function BuildSend(parent)
         if ok then f.pendingClear = #jobs end
         f.Refresh()
     end)
+    -- Jeder verschickte Brief nimmt sein Item gleich aus der Liste; das naechste Item ist dann das naechste in der Reihe
+    FW:On("MAIL_JOB_SENT", function(_, job)
+        if not (job and job.item) then return end
+        for i = #picks, 1, -1 do
+            if picks[i] == job.item then table.remove(picks, i) end
+        end
+        if f:IsShown() then f.Refresh() end
+    end, OWNER)
     FW:On("MAIL_SENT_DONE", function(_, sent, total, sentJobs, reason)
         -- Verschickte Anhaenge verschwinden aus der Liste (auch bei teilweisem Erfolg, nicht Verschickte bleiben stehen)
         local wasSent = {}
@@ -1398,6 +1406,17 @@ SlashCmdList["FREEWOODMAIL"] = function(msg)
         FW:Print(T("MAIL_CMD_ON"))
     elseif msg == "archive" or msg == "archiv" then
         if Mail.OpenArchive then Mail.OpenArchive(true) end
+    elseif msg == "slots" or msg == "anhang" then
+        -- Probe: wie viele Anhaenge nimmt ein Brief in diesem Spiel? (Grundlage fuer mehrere Items je Brief)
+        local max = _G.ATTACHMENTS_MAX_SEND
+        local probe = {}
+        for i = 1, 12 do
+            local ok, name = pcall(_G.GetSendMailItem or function() end, i)
+            probe[#probe + 1] = (ok and "ok" or "Fehler")
+        end
+        FW:Print(string.format("Anhang-Plaetze: ATTACHMENTS_MAX_SEND = %s, GetSendMailItem(1..12): %s, ClickSendMailItemButton: %s, Senden-Reiter: %s",
+            tostring(max), table.concat(probe, " "), tostring(_G.ClickSendMailItemButton ~= nil),
+            (_G.SendMailFrame and SendMailFrame.IsShown and SendMailFrame:IsShown()) and "an" or "aus"))
     elseif msg == "off" then
         Mail:SetReplace(false)
         FW:Print(T("MAIL_CMD_OFF"))

@@ -1401,6 +1401,8 @@ function Mail:OnSendSuccess()
         s.sentJobs = s.sentJobs or {}
         if s.current then s.sentJobs[#s.sentJobs + 1] = s.current end
         FW:Fire("MAIL_STATE")
+        -- Brief fuer Brief melden: das Fenster nimmt das verschickte Item sofort aus der Liste (nicht erst am Ende)
+        if s.current then FW:Fire("MAIL_JOB_SENT", s.current) end
     end
 end
 
