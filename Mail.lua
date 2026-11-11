@@ -54,7 +54,7 @@ local Mail = FW:NewModule("Mail", {
     title = L.MAIL_TITLE,
     description = L.MAIL_DESC,
     defaults = {
-        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false, codCheck = false },
+        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false, codCheck = false, skin = "auto" },
         recipients = {},
         lists = {},
         archive = {},          -- entfernte Briefe, neueste zuerst

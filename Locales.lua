@@ -115,6 +115,10 @@ FW:AddLocale("enUS", {
     MAIL_AUTO_WAIT_BOARD = "Mail: automatic sending waits for the board mission mail.",
 
     MAIL_SET_HEADER = "Mailbox",
+    MAIL_SET_SKIN = "Mailbox design",
+    MAIL_SKIN_AUTO = "Automatic (follows the overall design)",
+    MAIL_SKIN_NORMAL = "Normal",
+    MAIL_SKIN_LEGION = "Legion of the Apes",
     MAIL_SET_REPLACE = "Replace the normal mailbox window with the Freewood mailbox",
     MAIL_SET_CHAT = "Report results in chat",
     MAIL_SET_NOTE = "Off by default. With the replacement on, the normal window stays open but invisible, so board missions keep working. /fwmail off switches back at any time.",
@@ -282,6 +286,10 @@ FW:AddLocale("deDE", {
     MAIL_AUTO_WAIT_BOARD = "Briefkasten: Das automatische Senden wartet auf den Brief des Brett-Auftrags.",
 
     MAIL_SET_HEADER = "Briefkasten",
+    MAIL_SET_SKIN = "Postfach-Design",
+    MAIL_SKIN_AUTO = "Automatisch (folgt dem Gesamtdesign)",
+    MAIL_SKIN_NORMAL = "Normal",
+    MAIL_SKIN_LEGION = "Legion der Affen",
     MAIL_SET_REPLACE = "Normales Briefkasten-Fenster durch das Freewood-Briefkasten ersetzen",
     MAIL_SET_CHAT = "Ergebnisse im Chat melden",
     MAIL_SET_NOTE = "Standardmäßig aus. Mit Ersetzen bleibt das normale Fenster geöffnet, aber unsichtbar, damit Brett-Aufträge weiter funktionieren. /fwmail off schaltet jederzeit zurück.",

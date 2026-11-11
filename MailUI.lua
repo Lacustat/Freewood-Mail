@@ -349,6 +349,7 @@ local function BuildInbox(parent)
 
     ---------------- Lesefenster rechts ----------------
     local d = UI.CreatePanel(f, "card", "bronze")
+    f.detail = d
     d:SetPoint("TOPLEFT", f, "TOPLEFT", LIST_W + 12, -70)
     d:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 36)
     d.empty = UI.CreateLabel(d, T("MAIL_DETAIL_EMPTY"), { size = 12, color = "textDim", justify = "CENTER" })
@@ -511,6 +512,7 @@ local function BuildInbox(parent)
         row.days = UI.CreateLabel(row, "", { size = 11, color = "textDim", justify = "RIGHT" })
         row.days:SetPoint("RIGHT", row.ret, "LEFT", -4, 0)
         Tooltip(row)
+        if Mail.Skin and Mail.Skin.StyleRow then Mail.Skin.StyleRow(row) end
         row:SetScript("OnMouseUp", function()
             if row.mail then
                 Mail.view = { key = row.mail.key, pair = Mail.Pair(row.mail) }
@@ -660,6 +662,7 @@ local function BuildInbox(parent)
             row:SetAlpha(m.take and 1 or 0.75)
             row.cb:Refresh()
             UI.SetBorderColor(row, (view and view.key == m.key) and "gold" or "bronze")
+            if row.fwSkinState then row.fwSkinState(view and view.key == m.key) end
             if m.take then takeable = takeable + 1 end
             row:Show()
         end
@@ -1113,6 +1116,7 @@ function SelectTab(id)
         if tabs[def.id] then tabs[def.id]:SetActive(def.id == id) end
     end
     if Mail.SyncBlizzardTab then Mail.SyncBlizzardTab() end
+    if Mail.Skin and Mail.Skin.OnTab then Mail.Skin.OnTab(id) end
 end
 
 local function UpdateFooter()
@@ -1193,6 +1197,10 @@ local function BuildWindow()
     footer:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 10)
     footer:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -16, 10)
     footer:SetWordWrap(false)
+
+    Mail.ui = { window = f, title = title, close = close, archive = arch, divider = div, tabs = tabs, content = content,
+        footer = footer, panes = panes, tabDefs = TAB_DEFS, select = SelectTab, current = function() return current end, W = W, H = H }
+    if Mail.Skin and Mail.Skin.OnBuilt then pcall(Mail.Skin.OnBuilt) end
 
     f:Hide()
     return f
@@ -1334,7 +1342,7 @@ if UI.RegisterSettingsSection then
     UI:RegisterSettingsSection("mail", {
         category = "modules",
         order = 118,
-        height = 220,
+        height = 280,
         build = function(parent)
             local f, stack = UI.CreateSection(parent, T("MAIL_SET_HEADER"))
             local boxes = {}
@@ -1345,6 +1353,24 @@ if UI.RegisterSettingsSection then
             end)
             stack:Add(replace, { fit = true, gap = 4 })
             boxes[#boxes + 1] = replace
+            stack:Add(UI.CreateLabel(f, T("MAIL_SET_SKIN"), { size = 12 }), { height = 16, gap = 8 })
+            local skinDD
+            skinDD = UI.CreateDropdown(f, 300, 24, {
+                getOptions = function()
+                    return { { value = "auto", text = T("MAIL_SKIN_AUTO") }, { value = "normal", text = T("MAIL_SKIN_NORMAL") },
+                        { value = "legion", text = T("MAIL_SKIN_LEGION") } }
+                end,
+                textOf = function(v) return T(v == "normal" and "MAIL_SKIN_NORMAL" or v == "legion" and "MAIL_SKIN_LEGION" or "MAIL_SKIN_AUTO") end,
+                onChange = function(v)
+                    if v then
+                        Mail.db.settings.skin = v
+                        skinDD:SetValue(v)
+                        if Mail.Skin and Mail.Skin.Apply then Mail.Skin.Apply() end
+                    end
+                end,
+            })
+            stack:Add(skinDD, { height = 24, gap = 2 })
+            boxes[#boxes + 1] = { Refresh = function() skinDD:SetValue(Mail.db.settings.skin or "auto") end }
             local chat = UI.CreateCheckbox(f, T("MAIL_SET_CHAT"), function()
                 return Mail.db.settings.chat
             end, function(value)
