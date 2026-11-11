@@ -1353,7 +1353,7 @@ if UI.RegisterSettingsSection then
             stack:Add(chat, { fit = true, gap = 4 })
             boxes[#boxes + 1] = chat
             local codCheck = UI.CreateCheckbox(f, T("MAIL_SET_CODCHECK"), function()
-                return Mail.db.settings.codCheck ~= false
+                return Mail.db.settings.codCheck == true
             end, function(value)
                 Mail.db.settings.codCheck = value and true or false
                 if not value and FW.Print then FW:Print(FW.L.MAIL_CODCHECK_OFF) end

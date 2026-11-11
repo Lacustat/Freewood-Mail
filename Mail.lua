@@ -54,7 +54,7 @@ local Mail = FW:NewModule("Mail", {
     title = L.MAIL_TITLE,
     description = L.MAIL_DESC,
     defaults = {
-        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false, codCheck = true },
+        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false, codCheck = false },
         recipients = {},
         lists = {},
         archive = {},          -- entfernte Briefe, neueste zuerst
@@ -694,11 +694,11 @@ function Mail:FindMail(key, pair)
     end
 end
 
--- Warnung zu einem Nachnahme-Brief aus der Brett-Pruefung (Einstellung "Nachnahme pruefen", Standard an):
+-- Warnung zu einem Nachnahme-Brief aus der Brett-Pruefung (Einstellung "Nachnahme pruefen", Standard aus):
 -- nil (alles in Ordnung, keine Nachnahme oder Pruefung aus) | "nodeal" | "high" | "taken", vereinbarter Betrag
 function Mail.CodWarning(m)
     if not m or (m.cod or 0) <= 0 then return nil end
-    if Mail.db and Mail.db.settings and Mail.db.settings.codCheck == false then return nil end
+    if Mail.db and Mail.db.settings and Mail.db.settings.codCheck ~= true then return nil end
     local B = FW.Brett
     if not (B and B.InspectMail) then return nil end
     local ok, st, _, _, best = pcall(B.InspectMail, m.i)
@@ -1419,6 +1419,11 @@ function Mail:OnSendFailed()
 end
 
 function Mail:OnEnable()
+    -- Nachnahme-Pruefung ist ab 0.1.16 standardmaessig aus (wie im Blizzard-Postfach); einmal zuruecksetzen
+    if self.db.settings.codCheckReset ~= 1 then
+        self.db.settings.codCheck = false
+        self.db.settings.codCheckReset = 1
+    end
     if self.db.settings.guardDelete then pcall(Mail.InstallDeleteGuard) end
     self.driver = self.driver or CreateFrame("Frame")
     local acc = 0
