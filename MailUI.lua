@@ -547,6 +547,7 @@ local function BuildInbox(parent)
         if f.shownKey ~= cur.key then
             f.shownKey = cur.key
             f.bodyTries = 0
+            d.msg:SetText("")
             f.bodyText = Mail.ReadText(cur.i)
             if FW.Brett and FW.Brett.CheckMailData then pcall(FW.Brett.CheckMailData, cur.i) end
         elseif (f.bodyText or "") == "" and (f.bodyTries or 0) < 5 then
@@ -586,6 +587,15 @@ local function BuildInbox(parent)
         d.bodyScroll:ClearAllPoints()
         d.bodyScroll:SetPoint("TOPLEFT", d, "TOPLEFT", 12, cur.hasItem and -114 or -76)
         d.bodyScroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -12, 132)
+
+        -- Warnung der Brett-Pruefung bei Nachnahme (rot, nur wenn gerade keine andere Meldung steht)
+        local warn, best = Mail.CodWarning(cur)
+        if warn then
+            local wtext = FW.L["MAIL_COD_WARN_" .. warn]
+            if wtext and (d.msg:GetText() or "") == "" then
+                d.msg:SetText(string.format(wtext, Mail.Money(cur.cod), Mail.Money(best or 0)))
+            end
+        end
 
         local busy = Mail.busy ~= nil
         local canTake = (cur.money > 0 and cur.cod == 0) or cur.hasItem
@@ -1342,6 +1352,14 @@ if UI.RegisterSettingsSection then
             end)
             stack:Add(chat, { fit = true, gap = 4 })
             boxes[#boxes + 1] = chat
+            local codCheck = UI.CreateCheckbox(f, T("MAIL_SET_CODCHECK"), function()
+                return Mail.db.settings.codCheck ~= false
+            end, function(value)
+                Mail.db.settings.codCheck = value and true or false
+                if not value and FW.Print then FW:Print(FW.L.MAIL_CODCHECK_OFF) end
+            end)
+            stack:Add(codCheck, { fit = true, gap = 4 })
+            boxes[#boxes + 1] = codCheck
             local boardAuto = UI.CreateCheckbox(f, T("MAIL_SET_BOARDAUTO"), function()
                 return Mail.db.settings.boardAuto
             end, function(value)

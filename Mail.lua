@@ -54,7 +54,7 @@ local Mail = FW:NewModule("Mail", {
     title = L.MAIL_TITLE,
     description = L.MAIL_DESC,
     defaults = {
-        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false },
+        settings = { replace = false, chat = true, cleanup = true, archiveDays = 0, boardAuto = true, guardDelete = false, codCheck = true },
         recipients = {},
         lists = {},
         archive = {},          -- entfernte Briefe, neueste zuerst
@@ -694,17 +694,24 @@ function Mail:FindMail(key, pair)
     end
 end
 
+-- Warnung zu einem Nachnahme-Brief aus der Brett-Pruefung (Einstellung "Nachnahme pruefen", Standard an):
+-- nil (alles in Ordnung, keine Nachnahme oder Pruefung aus) | "nodeal" | "high" | "taken", vereinbarter Betrag
+function Mail.CodWarning(m)
+    if not m or (m.cod or 0) <= 0 then return nil end
+    if Mail.db and Mail.db.settings and Mail.db.settings.codCheck == false then return nil end
+    local B = FW.Brett
+    if not (B and B.InspectMail) then return nil end
+    local ok, st, _, _, best = pcall(B.InspectMail, m.i)
+    if ok and (st == "nodeal" or st == "high" or st == "taken") then return st, best end
+    return nil
+end
+
 -- Inhalt eines einzelnen Briefs nehmen (erst Gold, dann Item). Nachnahme zahlt der Spieler mit einem zweiten Klick (UI).
 function Mail:TakeOne(m)
     if self.busy then return false, "busy" end
     if m.cod > 0 then
-        local B = FW.Brett
-        if B and B.InspectMail then
-            local ok, st = pcall(B.InspectMail, m.i)
-            if ok and st == "high" then return false, "codbad" end
-            if ok and st == "nodeal" then return false, "codnodeal" end
-            if ok and st == "taken" then return false, "codtaken" end
-        end
+        -- Die Brett-Pruefung sperrt nicht mehr: Abweichungen zeigt die Oberflaeche als Warnung (Mail.CodWarning), der Spieler
+        -- bestaetigt mit dem zweiten Klick.
         if ((GetMoney and GetMoney()) or 0) < m.cod then return false, "codmoney" end
     end
     if m.money > 0 and m.cod == 0 then
