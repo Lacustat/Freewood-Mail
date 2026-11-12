@@ -102,7 +102,7 @@ local function Build(ui)
         pg:SetTexture(PATH .. "parchment.tga")
         pg:SetTexCoord(0, 1, 0, 0.75)
         pg:SetPoint("TOPLEFT", d, "TOPLEFT", -10, 8)
-        pg:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", 14, -14)
+        pg:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", 14, -2)
         parts.parchment = pg
     end
 end
@@ -174,6 +174,10 @@ function S.Apply()
     if not ui or not ui.window then return end
     if not parts then Build(ui) end
     local on = S.Wanted()
+    -- Holzknoepfe/Rollbalken im Postfach: Legion erzwungen = immer, Normal = nie, Automatisch = folgt dem Gesamtdesign
+    local mode = Mail.db and Mail.db.settings and Mail.db.settings.skin or "auto"
+    ui.window.fwPlankMode = (mode == "legion") and "on" or (mode == "normal") and "off" or nil
+    if UI.LegionSkin then UI.LegionSkin.Refresh() end
     if on == active and ui.window:GetWidth() == (on and WL or ui.W) then return end
     active = on
     pcall(Layout, on)
