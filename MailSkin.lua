@@ -82,12 +82,17 @@ local function Build(ui)
     dd:SetValue(ui.current())
     parts.dropdown = dd
 
-    -- Schliessen-Knopf im roten Ring
+    -- Schliessen: grosses "X" als Text mitten im Ring (keine Knopfgrafik, damit es sicher zentriert sitzt)
     local close = CreateFrame("Button", nil, w)
-    close:SetSize(52, 52)
-    close:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-    close:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-    close:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+    close:SetSize(64, 64)
+    close.x = UI.CreateLabel(close, "X", { font = "heading", size = 44, justify = "CENTER", flags = "OUTLINE", color = "text" })
+    close.x:ClearAllPoints()
+    close.x:SetPoint("CENTER", close, "CENTER", 0, -1)
+    close.x:SetTextColor(0.97, 0.92, 0.78, 1)
+    close:SetScript("OnEnter", function(self) self.x:SetTextColor(1, 0.82, 0.3, 1) end)
+    close:SetScript("OnLeave", function(self) self.x:SetTextColor(0.97, 0.92, 0.78, 1) end)
+    close:SetScript("OnMouseDown", function(self) self.x:SetTextColor(0.75, 0.55, 0.2, 1) end)
+    close:SetScript("OnMouseUp", function(self) self.x:SetTextColor(1, 0.82, 0.3, 1) end)
     close:SetScript("OnClick", function()
         local fn = ui.close and ui.close.GetScript and ui.close:GetScript("OnClick")
         if fn then fn(ui.close) end

@@ -30,7 +30,7 @@ local theme = "default"
 local FW = { L = setmetatable({}, { __index = function(_, k) return k end }),
     On = function(_, e, f) handlers[e] = f end,
     Design = { IsTheme = function(name) return theme == name end },
-    UI = { CreateDropdown = function() return Obj() end } }
+    UI = { CreateDropdown = function() return Obj() end, CreateLabel = function() return Obj() end } }
 _G.Freewood = FW
 local Mail = { db = { settings = { skin = "auto" } } }
 FW.Mail = Mail
