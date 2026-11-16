@@ -1,6 +1,6 @@
 # Freewood-Mail
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.2.2 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.2.3 · Interface 16001 (World of Warcraft: Forever).
 
 ![Mail](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
 

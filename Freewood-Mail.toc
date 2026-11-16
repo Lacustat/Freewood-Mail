@@ -3,7 +3,7 @@
 ## Notes: Own mailbox window: open all or selected mails safely, recent recipients, mailing lists with automatic sending, multi-item mails, gold surplus and cash on delivery.
 ## Notes-deDE: Eigenes Briefkasten-Fenster: alles oder Ausgewähltes sicher öffnen, letzte Empfänger, Mailinglisten mit Automatik, mehrere Items, Gold-Überschuss und Nachnahme.
 ## Author: Lacustat
-## Version: 0.2.2
+## Version: 0.2.3
 ## Dependencies: Freewood-Core
 ## OptionalDeps: Freewood-Creator, Freewood-Brett
 ## X-Wago-ID: rN4r7vKD
