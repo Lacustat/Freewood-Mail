@@ -109,7 +109,7 @@ local function Tooltip(frame, itemID, inboxIndex)
         local id = self.itemID
         if idx and GameTooltip.SetInboxItem then
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            local okT = pcall(GameTooltip.SetInboxItem, GameTooltip, idx, 1)
+            local okT = pcall(GameTooltip.SetInboxItem, GameTooltip, idx, self.slot or 1)
             if not okT and id then pcall(GameTooltip.SetItemByID, GameTooltip, id) end
             GameTooltip:Show()
         elseif id then
@@ -383,6 +383,41 @@ local function BuildInbox(parent)
     d.item.name:SetJustifyH("LEFT")
     Tooltip(d.item)
     d.item:Hide()
+    -- Alle Anhaenge als Raster wie im Blizzard-Fenster (0.3.0): Klick nimmt genau diesen Anhang
+    local SLOT, GAP, PER_ROW = 36, 4, 7
+    d.slots = {}
+    local function SlotTip(self)
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        local okT = self.inboxIndex and GameTooltip.SetInboxItem and pcall(GameTooltip.SetInboxItem, GameTooltip, self.inboxIndex, self.slot)
+        if not okT and self.itemID then pcall(GameTooltip.SetItemByID, GameTooltip, self.itemID) end
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine(self.cod and T("MAIL_SLOT_TIP_COD") or T("MAIL_SLOT_TIP"), 0.6, 0.8, 1, true)
+        GameTooltip:Show()
+    end
+    for k = 1, Mail.MAX_ATTACH do
+        local b = CreateFrame("Button", nil, d)
+        b:SetSize(SLOT, SLOT)
+        local row, col = math.floor((k - 1) / PER_ROW), (k - 1) % PER_ROW
+        b:SetPoint("TOPLEFT", d, "TOPLEFT", 12 + col * (SLOT + GAP), -72 - row * (SLOT + GAP))
+        b.border = b:CreateTexture(nil, "BACKGROUND")
+        b.border:SetAllPoints(b)
+        b.icon = b:CreateTexture(nil, "ARTWORK")
+        b.icon:SetPoint("TOPLEFT", b, "TOPLEFT", 2, -2)
+        b.icon:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -2, 2)
+        b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        b.hl = b:CreateTexture(nil, "HIGHLIGHT")
+        b.hl:SetAllPoints(b)
+        b.hl:SetColorTexture(1, 1, 1, 0.2)
+        b.count = UI.CreateLabel(b, "", { size = 11, justify = "RIGHT" })
+        b.count:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3)
+        b:SetScript("OnEnter", SlotTip)
+        b:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
+        b:Hide()
+        d.slots[k] = b
+    end
+    d.slotRows = function(n) return n > 0 and math.floor((n - 1) / PER_ROW) + 1 or 0 end
+    d.SLOT_STEP = SLOT + GAP
     d.bodyScroll:SetPoint("TOPLEFT", d, "TOPLEFT", 12, -76)
     d.bodyScroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -12, 132)
     d.body = UI.CreateLabel(d.bodyScroll.child, "", { size = 12, justifyV = "TOP" })
@@ -420,7 +455,14 @@ local function BuildInbox(parent)
             return
         end
         f.codConfirm = nil
-        local ok, why = Mail:TakeOne(m)
+        local ok, why
+        local n = (m.items and #m.items or 0) + ((m.money or 0) > 0 and 1 or 0)
+        if m.cod == 0 and n > 1 then
+            ok = Mail:StartTakeMail(m)
+            why = not ok and "busy" or nil
+        else
+            ok, why = Mail:TakeOne(m)
+        end
         ShowError(not ok and why or nil)
         f.Refresh()
     end)
@@ -544,7 +586,11 @@ local function BuildInbox(parent)
         for _, w in ipairs({ d.subj, d.meta, d.attach, d.bodyScroll, d.msg, d.take, d.reply, d.ret, d.delete }) do
             w:SetShown(cur ~= nil)
         end
-        if not cur then f.shownKey = nil return end
+        if not cur then
+            f.shownKey = nil
+            for _, b in ipairs(d.slots) do b:Hide() end
+            return
+        end
         view.key = cur.key
         if f.shownKey ~= cur.key then
             f.shownKey = cur.key
@@ -564,8 +610,37 @@ local function BuildInbox(parent)
         d.subj:SetText(cur.subject ~= "" and Mail.ColorSubject(cur.subject) or T("MAIL_ARCH_NOSUBJECT"))
         d.meta:SetText(string.format(T("MAIL_DETAIL_FROM"), cur.sender) .. (cur.days and ("   " .. string.format(T("MAIL_ROW_DAYS"), math.floor(cur.days))) or ""))
         local parts = {}
-        if cur.hasItem then
+        local atts = cur.items or {}
+        for k, b in ipairs(d.slots) do
+            local att = atts[k]
+            if att and #atts > 1 then
+                b.inboxIndex, b.slot, b.itemID, b.cod = cur.i, att.slot, att.id, (cur.cod or 0) > 0
+                b.icon:SetTexture(att.tex or "Interface\\Icons\\INV_Misc_QuestionMark")
+                b.count:SetText((att.count or 1) > 1 and tostring(att.count) or "")
+                local q = att.quality
+                if q and q >= 2 and UI.RarityHex then
+                    local hex = UI.RarityHex(q)
+                    b.border:SetColorTexture(tonumber(hex:sub(1, 2), 16) / 255, tonumber(hex:sub(3, 4), 16) / 255, tonumber(hex:sub(5, 6), 16) / 255, 1)
+                else
+                    b.border:SetColorTexture(0.25, 0.22, 0.16, 1)
+                end
+                b:SetScript("OnClick", function(self)
+                    local m = f.current
+                    if not m then return end
+                    local ok, why = Mail:TakeAttachment(m, self.slot)
+                    ShowError(not ok and why or nil)
+                    if GameTooltip then GameTooltip:Hide() end
+                    f.Refresh()
+                end)
+                b:Show()
+            else
+                b:Hide()
+            end
+        end
+        local gridRows = (#atts > 1) and d.slotRows(#atts) or 0
+        if cur.hasItem and #atts <= 1 then
             d.item.inboxIndex = cur.i
+            d.item.slot = atts[1] and atts[1].slot or 1
             d.item.icon:SetTexture(cur.itemTex or "Interface\\Icons\\INV_Misc_QuestionMark")
             d.item.count:SetText((cur.itemCount or 1) > 1 and tostring(cur.itemCount) or "")
             d.item.itemID = cur.itemID
@@ -577,6 +652,9 @@ local function BuildInbox(parent)
             d.item:Hide()
             d.item.name:Hide()
         end
+        if gridRows > 0 then
+            parts[#parts + 1] = string.format(T("MAIL_ATTACH_COUNT"), #atts)
+        end
         if cur.money > 0 then parts[#parts + 1] = string.format(T("MAIL_ATTACH_GOLD"), Mail.Money(cur.money)) end
         local attach = #parts > 0 and table.concat(parts, "   ") or (cur.hasItem and "" or T("MAIL_ATTACH_NONE"))
         if cur.cod > 0 then attach = attach .. "   |cffff7060" .. string.format(T("MAIL_ATTACH_COD"), Mail.Money(cur.cod)) .. "|r" end
@@ -587,7 +665,9 @@ local function BuildInbox(parent)
         local h = UI.FitLabel(d.body, bw, 20)
         d.bodyScroll:SetContentHeight(h + 8)
         d.bodyScroll:ClearAllPoints()
-        d.bodyScroll:SetPoint("TOPLEFT", d, "TOPLEFT", 12, cur.hasItem and -114 or -76)
+        local top = -76
+        if gridRows > 0 then top = -76 - gridRows * d.SLOT_STEP - 4 elseif cur.hasItem then top = -114 end
+        d.bodyScroll:SetPoint("TOPLEFT", d, "TOPLEFT", 12, top)
         d.bodyScroll:SetPoint("BOTTOMRIGHT", d, "BOTTOMRIGHT", -12, 132)
 
         -- Warnung der Brett-Pruefung bei Nachnahme (rot, nur wenn gerade keine andere Meldung steht)
@@ -605,8 +685,14 @@ local function BuildInbox(parent)
             d.take:SetLabel(f.codConfirm == cur.key and string.format(T("MAIL_TAKE_COD_CONFIRM"), Mail.Money(cur.cod)) or string.format(T("MAIL_TAKE_COD"), Mail.Money(cur.cod)))
             d.take:SetWidth(210)
         else
-            d.take:SetLabel(cur.money > 0 and T("MAIL_TAKE_GOLD") or T("MAIL_TAKE_ITEM"))
-            d.take:SetWidth(120)
+            local n = #atts + ((cur.money or 0) > 0 and 1 or 0)
+            if n > 1 then
+                d.take:SetLabel(string.format(T("MAIL_TAKE_ALL"), n))
+                d.take:SetWidth(170)
+            else
+                d.take:SetLabel(cur.money > 0 and T("MAIL_TAKE_GOLD") or T("MAIL_TAKE_ITEM"))
+                d.take:SetWidth(120)
+            end
         end
         d.take:SetButtonEnabled(canTake and not busy and Mail.open)
         d.delete:SetButtonEnabled(((cur.cod or 0) > 0 and Mail.Returnable(cur) or Mail.Deletable(cur)) and not busy and Mail.open)

@@ -373,12 +373,18 @@ function Mail.ReadAttachment(i, a)
     return att
 end
 
+-- Alle Anhang-Plaetze lesen (0.3.0): wird einer aus der Mitte genommen, bleibt dort eine Luecke und die anderen behalten
+-- ihren Platz. Frueher hoerte das Lesen an der ersten Luecke auf. att.slot = Platznummer fuer TakeInboxItem(Brief, Platz).
+Mail.MAX_ATTACH = 16
 function Mail.ReadAttachments(m)
     local items = {}
-    for a = 1, 12 do
+    local max = tonumber(_G.ATTACHMENTS_MAX_RECEIVE) or Mail.MAX_ATTACH
+    for a = 1, max do
         local att = Mail.ReadAttachment(m.i, a)
-        if not att then break end
-        items[#items + 1] = att
+        if att then
+            att.slot = a
+            items[#items + 1] = att
+        end
     end
     m.items = items
     local f = items[1]
@@ -722,10 +728,29 @@ function Mail:TakeOne(m)
         if Mail.FreeSlots() <= KEEP_FREE then return false, "full" end
         NoteTaken(m, "item")
         if m.cod > 0 and FW.Brett and FW.Brett.NoteDelivered then pcall(FW.Brett.NoteDelivered, m.sender, m.subject) end
-        pcall(TakeInboxItem, m.i)
+        pcall(TakeInboxItem, m.i, Mail.FirstSlot(m))
         return true
     end
     return false, "empty"
+end
+
+-- Platz des ersten vorhandenen Anhangs (Luecken moeglich)
+function Mail.FirstSlot(m)
+    return (m.items and m.items[1] and m.items[1].slot) or 1
+end
+
+-- Einen bestimmten Anhang nehmen (Klick auf das Symbol in der Detailansicht). Nicht bei Nachnahme.
+function Mail:TakeAttachment(m, slot)
+    if self.busy then return false, "busy" end
+    if not self.open then return false, "closed" end
+    if not m or not slot then return false, "empty" end
+    if (m.cod or 0) > 0 then return false, "codsingle" end
+    if Mail.FreeSlots() <= KEEP_FREE then return false, "full" end
+    NoteTaken(m, "item")
+    pcall(TakeInboxItem, m.i, slot)
+    Trace(string.format("Brief %d von %s: Anhang %d einzeln genommen", m.i, tostring(m.sender), slot))
+    FW:Fire("MAIL_STATE")
+    return true
 end
 
 Mail.selected = {}      -- key -> true
@@ -753,6 +778,19 @@ function Mail:SelectAll(on)
 end
 
 -- onlySelected: nur angehakte Briefe
+-- Alles aus einem einzelnen Brief nehmen ("Alle nehmen", 0.3.0): derselbe Ablauf wie "Alle oeffnen", nur fuer diesen Brief.
+-- Der Brief wird ueber Absender und Betreff erkannt, weil sich sein Schluessel nach jedem genommenen Item aendert.
+function Mail:StartTakeMail(m)
+    if self.busy or not self.open or not m then return false end
+    if (m.cod or 0) > 0 then return false end
+    self.run = { pair = Pair(m), tries = {}, money = 0, items = 0, pending = nil, removed = 0, archived = 0, touched = {} }
+    self.busy = "inbox"
+    self.driver:Show()
+    Trace("Posteingang: Start (ein Brief: " .. Pair(m) .. ")")
+    FW:Fire("MAIL_STATE")
+    return true
+end
+
 function Mail:StartOpen(onlySelected)
     if self.busy or not self.open then return false end
     if Mail.Loading() then Say(FW.L.MAIL_LOADING_WAIT) return false end
@@ -812,7 +850,7 @@ function Mail:StepOpen()
     local free = Mail.FreeSlots()
     for idx = #list, 1, -1 do
         local m = list[idx]
-        if m.take and (not run.only or run.only[m.key]) and (run.tries[m.sig] or 0) < 3 then
+        if m.take and (not run.only or run.only[m.key]) and (not run.pair or Pair(m) == run.pair) and (run.tries[m.sig] or 0) < 3 then
             if m.money > 0 then
                 run.tries[m.sig] = (run.tries[m.sig] or 0) + 1
                 run.money = run.money + 1
@@ -832,8 +870,8 @@ function Mail:StepOpen()
                     run.touched[Pair(m)] = true
                     NoteTaken(m, "item")
                     run.pending, run.updated = now, false
-                    pcall(TakeInboxItem, m.i)
-                    Trace(string.format("Brief %d von %s: Item %s genommen (frei vorher %d)", m.i, m.sender, tostring(m.itemName), free))
+                    pcall(TakeInboxItem, m.i, Mail.FirstSlot(m))
+                    Trace(string.format("Brief %d von %s: Item %s genommen (Platz %d, frei vorher %d)", m.i, m.sender, tostring(m.itemName), Mail.FirstSlot(m), free))
                     FW:Fire("MAIL_STATE")
                     return
                 end
@@ -845,7 +883,7 @@ function Mail:StepOpen()
         for idx = #list, 1, -1 do
             local m = list[idx]
             local key = "del|" .. m.sig
-            if Mail.Deletable(m) and (not run.only or run.touched[Pair(m)]) and (run.tries[key] or 0) < 2 then
+            if Mail.Deletable(m) and ((not run.only and not run.pair) or run.touched[Pair(m)]) and (run.tries[key] or 0) < 2 then
                 run.tries[key] = (run.tries[key] or 0) + 1
                 local ok, how = self:RemoveMail(m)
                 if ok then
