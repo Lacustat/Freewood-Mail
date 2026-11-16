@@ -1,6 +1,6 @@
 # Freewood-Mail
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.3.2 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.3.3 · Interface 16001 (World of Warcraft: Forever).
 
 ![Mail](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
 
@@ -38,6 +38,7 @@ Den Ordner `Freewood-Mail` nach `World of Warcraft\_forever_\Interface\AddOns\` 
 
 - Aus der OctoWoW-Version übernommen (nur Code). Im Spiel noch nicht geprüft; die Anbindung an Brett ist noch nicht vollständig (Brett hat in Forever noch den älteren Stand).
 - Mail ersetzt keine Blizzard-Funktionen mehr (`DeleteInboxItem`, `UseContainerItem`): Das verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Dadurch gibt es keinen Rechtsklick-Anhängen mehr (Items per Ziehen oder „Items hinzufügen“) und keinen Schutz vor dem Löschen von Nachnahme-Briefen im Blizzard-Fenster. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
+- 0.3.3: Mailinglisten und Senden finden jetzt auch Items in der Reagenzientasche (Tasche 5: Kräuter, Erze, Öle fehlten vorher und standen als „nicht in den Taschen“ da). Neu im Auswahlfenster: ein Ablege-Feld oben, ein Item aus den Taschen hineinziehen fügt es hinzu (Mailingliste: das Item; Senden: der erste freie Stapel). Im Spiel ungeprüft, ob Forever die Reagenzientasche hat.
 - 0.3.2: Behoben: „Alle nehmen“ und „Alle öffnen“ ließen bei mehreren gleichen Stapeln im Brief (z. B. 4x „Silberblatt x20“) den Rest liegen, weil der Brief nach jedem Nehmen gleich aussah und nach 3 Versuchen aufgegeben wurde. Die Versuche zählen jetzt je Zustand (Anzahl Anhänge und erster Platz).
 - 0.3.1: Behoben: Im normalen Design zeigte der Briefkasten beim ersten Öffnen die Grafik von „Legion der Affen“ dahinter, bis man auf Legion und zurück stellte. Frisch angelegte Teile werden jetzt sofort passend ein- oder ausgeblendet.
 - 0.3.0: Detailansicht zeigt alle Anhänge als Raster wie im Blizzard-Fenster (bis 16, Menge, Qualitätsrahmen, Tooltip je Item). Klick auf ein Symbol nimmt genau dieses Item (nicht bei Nachnahme); der Knopf „Alle nehmen (n)“ nimmt alles aus diesem Brief nacheinander. Behoben: Lücken bei den Anhang-Plätzen (nach dem Nehmen aus der Mitte) wurden nicht erkannt; jetzt werden alle Plätze gelesen und gezielt genommen. Test `texlua tests/attach_test.lua`. Im Spiel ungeprüft.
@@ -83,6 +84,7 @@ Copy the folder `Freewood-Mail` to `World of Warcraft\_forever_\Interface\AddOns
 
 - Taken over from the OctoWoW version (code only). Not yet verified in game; the link to Brett is not complete yet (Brett is still at the older state in Forever).
 - Mail no longer replaces Blizzard functions (`DeleteInboxItem`, `UseContainerItem`): that caused “Freewood-Mail was blocked” when using items on Forever. As a result there is no right-click attaching any more (drag items or use “Add items”) and no protection against deleting cash-on-delivery mails in the Blizzard window.
+- 0.3.3: Mailing lists and sending now also find items in the reagent bag (bag 5: herbs, ores, oils were missing and showed as "not in your bags"). New in the picker: a drop box at the top; dragging an item from your bags into it adds it (mailing list: the item; sending: the first free stack). Not verified in game whether Forever has the reagent bag.
 - 0.3.2: Fixed: "Take all" and "Open all" left the rest behind when a mail held several identical stacks (e.g. 4x "Silverleaf x20"), because the mail looked the same after each take and was given up after 3 tries. Tries now count per state (number of attachments and first slot).
 - 0.3.1: Fixed: in the normal design the mailbox showed the "Legion der Affen" artwork behind it on first opening, until you switched to Legion and back. Freshly created parts are now shown or hidden correctly right away.
 - 0.3.0: The detail view shows all attachments as a grid like the Blizzard frame (up to 16, count, quality border, tooltip per item). Clicking an icon takes just that item (not for cash on delivery); the button "Take all (n)" takes everything from this mail one after another. Fixed: gaps in attachment slots (after taking from the middle) were not recognised; now all slots are read and taken by slot. Test `texlua tests/attach_test.lua`. Not verified in game.

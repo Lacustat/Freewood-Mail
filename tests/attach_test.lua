@@ -88,4 +88,15 @@ for _ = 1, 80 do
     Mail:StepOpen()
 end
 assert(#taken == 6 and next(inbox[1].items) == nil, "alle 6 gleichen Stapel genommen: " .. #taken)
+-- 6) Reagenzientasche (Tasche 5) wird mit durchsucht (0.3.3)
+local bags = { [0] = { [1] = { 2589, 20 } }, [5] = { [3] = { 3356, 20 } } }
+_G.C_Container.GetContainerNumSlots = function(bag) return bags[bag] and 16 or 0 end
+_G.C_Container.GetContainerItemInfo = function(bag, slot)
+    local it = bags[bag] and bags[bag][slot]
+    if it then return { itemID = it[1], stackCount = it[2], isLocked = false } end
+end
+local st = Mail.BagStacks()
+local found5 = false
+for _, x in ipairs(st) do if x.bag == 5 and x.id == 3356 then found5 = true end end
+assert(#st == 2 and found5, "Kraut aus der Reagenzientasche gefunden")
 print("attach_test OK")

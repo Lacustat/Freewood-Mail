@@ -160,7 +160,7 @@ end
 
 local function BuildPicker()
     local p = UI.CreatePanel(window, "bgDeep", "gold")
-    p:SetSize(460, 440)
+    p:SetSize(460, 480)
     p:SetPoint("CENTER", window, "CENTER", 0, 0)
     p:SetFrameStrata("DIALOG")
     p:EnableMouse(true)
@@ -171,8 +171,68 @@ local function BuildPicker()
     p.hint:SetPoint("TOPRIGHT", p, "TOPRIGHT", -16, -38)
     p.hint:SetHeight(28)
     p.hint:SetWordWrap(true)
+    -- Ablege-Feld (0.3.3): Item aus den Taschen hierher ziehen = hinzufuegen (Rueckfall, falls die Liste es nicht zeigt)
+    p.drop = UI.CreatePanel(p, "card", "bronze")
+    p.drop:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -72)
+    p.drop:SetPoint("TOPRIGHT", p, "TOPRIGHT", -16, -72)
+    p.drop:SetHeight(40)
+    p.drop:EnableMouse(true)
+    p.drop.icon = p.drop:CreateTexture(nil, "ARTWORK")
+    p.drop.icon:SetSize(28, 28)
+    p.drop.icon:SetPoint("LEFT", p.drop, "LEFT", 8, 0)
+    p.drop.icon:SetTexture("Interface\\Buttons\\UI-EmptySlot-Disabled")
+    p.drop.text = UI.CreateLabel(p.drop, T("MAIL_PICK_DROP"), { size = 12, color = "textDim" })
+    p.drop.text:SetPoint("LEFT", p.drop.icon, "RIGHT", 10, 0)
+    p.drop.text:SetPoint("RIGHT", p.drop, "RIGHT", -8, 0)
+    p.drop.text:SetWordWrap(false)
+    local function DropIt()
+        if not _G.GetCursorInfo then return end
+        local kind, id, link = _G.GetCursorInfo()
+        if kind ~= "item" then return end
+        id = tonumber(id) or (type(link) == "string" and tonumber(link:match("item:(%d+)"))) or nil
+        if _G.ClearCursor then _G.ClearCursor() end
+        if not id then return end
+        local msg
+        if p.mode == "list" then
+            if Mail:HasListItem(p.entry, id) then
+                msg = T("MAIL_PICK_DROP_HAVE")
+            elseif Mail:ToggleListItem(p.entry, id) == nil then
+                msg = T("MAIL_PICK_DROP_FULL")
+            else
+                msg = T("MAIL_PICK_DROP_ADDED")
+            end
+        else
+            -- Senden: ersten freien Stapel dieses Items aufnehmen, der noch nicht gewaehlt ist
+            local seen, added = {}, false
+            for _, st in ipairs(Mail.BagStacks()) do
+                local base = st.id .. ":" .. st.count
+                seen[base] = (seen[base] or 0) + 1
+                local key = base .. ":" .. seen[base]
+                if st.id == id and not st.locked then
+                    local have = false
+                    for _, pk in ipairs(picks) do if pk.key == key then have = true break end end
+                    if not have then
+                        picks[#picks + 1] = { id = st.id, count = st.count, key = key }
+                        added = true
+                        break
+                    end
+                end
+            end
+            msg = added and T("MAIL_PICK_DROP_ADDED") or T("MAIL_PICK_DROP_NOSTACK")
+        end
+        p.drop.text:SetText(msg)
+        if p.onChange then p.onChange() end
+        p:Fill()
+    end
+    p.DropIt = DropIt   -- fuer Tests
+    p.drop:SetScript("OnReceiveDrag", DropIt)
+    p.drop:SetScript("OnMouseUp", function() if Mail.CursorFilled() then DropIt() end end)
+    p.drop:SetScript("OnEnter", function(self)
+        if Mail.CursorFilled() and UI.SetBorderColor then UI.SetBorderColor(self, "gold") end
+    end)
+    p.drop:SetScript("OnLeave", function(self) if UI.SetBorderColor then UI.SetBorderColor(self, "bronze") end end)
     p.scroll = UI.CreateScrollFrame(p)
-    p.scroll:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -72)
+    p.scroll:SetPoint("TOPLEFT", p, "TOPLEFT", 16, -120)
     p.scroll:SetPoint("BOTTOMRIGHT", p, "BOTTOMRIGHT", -16, 52)
     p.empty = UI.CreateLabel(p.scroll.child, T("MAIL_PICK_EMPTY"), { size = 12, color = "textDim" })
     p.empty:SetPoint("TOPLEFT", p.scroll.child, "TOPLEFT", 4, -6)
@@ -283,6 +343,7 @@ local function OpenPicker(mode, entry, onChange)
         picker.title:SetText(T("MAIL_PICK_TITLE"))
         picker.hint:SetText(T("MAIL_PICK_HINT_SEND"))
     end
+    picker.drop.text:SetText(T("MAIL_PICK_DROP"))
     picker:Show()
     picker:Raise()
     picker:Fill()

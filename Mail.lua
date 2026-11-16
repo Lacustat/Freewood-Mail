@@ -150,10 +150,18 @@ Mail.CursorFilled = CursorFilled
 
 local function BagCount() return tonumber(_G.NUM_BAG_SLOTS) or 4 end
 
--- Alle Staepel in den normalen Taschen: { bag, slot, id, count, locked }
+-- Taschen fuer die Suche nach Items (0.3.3): auch die Reagenzientasche des heutigen Clients (Tasche 5,
+-- NUM_TOTAL_EQUIPPED_BAG_SLOTS). Kraeuter, Erze, Oele liegen dort und fehlten sonst in der Mailingliste.
+-- Gibt es sie nicht, hat Tasche 5 keine Plaetze und es passiert nichts.
+local function ScanBagCount()
+    return math.max(BagCount(), tonumber(_G.NUM_TOTAL_EQUIPPED_BAG_SLOTS) or 5)
+end
+Mail.ScanBagCount = ScanBagCount
+
+-- Alle Staepel in den Taschen (mit Reagenzientasche): { bag, slot, id, count, locked }
 function Mail.BagStacks()
     local out = {}
-    for bag = 0, BagCount() do
+    for bag = 0, ScanBagCount() do
         for slot = 1, NumSlots(bag) do
             local id, count, locked = SlotInfo(bag, slot)
             if id then out[#out + 1] = { bag = bag, slot = slot, id = id, count = count, locked = locked } end
