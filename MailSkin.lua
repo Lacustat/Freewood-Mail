@@ -177,19 +177,25 @@ end
 function S.Apply()
     local ui = Mail.ui
     if not ui or not ui.window then return end
-    if not parts then Build(ui) end
+    -- 0.3.1: Frisch angelegte Teile (Rahmen, Leder, Pergament) sind sofort sichtbar. Darum nach dem Anlegen immer einmal
+    -- das Layout setzen; frueher sprang der Vergleich unten ("schon normal") heraus und die Affen-Grafik blieb im
+    -- normalen Design stehen, bis man auf Legion und zurueck stellte.
+    local fresh = false
+    if not parts then Build(ui) fresh = true end
     local on = S.Wanted()
     -- Holzknoepfe/Rollbalken im Postfach: Legion erzwungen = immer, Normal = nie, Automatisch = folgt dem Gesamtdesign
     local mode = Mail.db and Mail.db.settings and Mail.db.settings.skin or "auto"
     ui.window.fwPlankMode = (mode == "legion") and "on" or (mode == "normal") and "off" or nil
     if UI.LegionSkin then UI.LegionSkin.Refresh() end
-    if on == active and ui.window:GetWidth() == (on and WL or ui.W) then return end
+    if not fresh and on == active and ui.window:GetWidth() == (on and WL or ui.W) then return end
     active = on
     pcall(Layout, on)
     if ui.window:IsShown() and ui.panes[ui.current()] and ui.panes[ui.current()].Refresh then
         pcall(ui.panes[ui.current()].Refresh)
     end
 end
+
+function S.Parts() return parts end   -- fuer Tests
 
 function S.OnBuilt()
     pcall(S.Apply)

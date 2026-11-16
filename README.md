@@ -1,6 +1,6 @@
 # Freewood-Mail
 
-**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.3.0 · Interface 16001 (World of Warcraft: Forever).
+**Deutsch & English · German & English.** Autor · Author: Lacustat. Version 0.3.1 · Interface 16001 (World of Warcraft: Forever).
 
 ![Mail](https://github.com/Lacustat/Freewood-OctoWoW-Bilder/blob/main/mail.jpg)
 
@@ -38,6 +38,7 @@ Den Ordner `Freewood-Mail` nach `World of Warcraft\_forever_\Interface\AddOns\` 
 
 - Aus der OctoWoW-Version übernommen (nur Code). Im Spiel noch nicht geprüft; die Anbindung an Brett ist noch nicht vollständig (Brett hat in Forever noch den älteren Stand).
 - Mail ersetzt keine Blizzard-Funktionen mehr (`DeleteInboxItem`, `UseContainerItem`): Das verursachte auf Forever „Freewood-Mail wurde blockiert“ beim Benutzen von Items. Dadurch gibt es keinen Rechtsklick-Anhängen mehr (Items per Ziehen oder „Items hinzufügen“) und keinen Schutz vor dem Löschen von Nachnahme-Briefen im Blizzard-Fenster. Unser eigenes Fenster schützt Nachnahme-Briefe weiterhin.
+- 0.3.1: Behoben: Im normalen Design zeigte der Briefkasten beim ersten Öffnen die Grafik von „Legion der Affen“ dahinter, bis man auf Legion und zurück stellte. Frisch angelegte Teile werden jetzt sofort passend ein- oder ausgeblendet.
 - 0.3.0: Detailansicht zeigt alle Anhänge als Raster wie im Blizzard-Fenster (bis 16, Menge, Qualitätsrahmen, Tooltip je Item). Klick auf ein Symbol nimmt genau dieses Item (nicht bei Nachnahme); der Knopf „Alle nehmen (n)“ nimmt alles aus diesem Brief nacheinander. Behoben: Lücken bei den Anhang-Plätzen (nach dem Nehmen aus der Mitte) wurden nicht erkannt; jetzt werden alle Plätze gelesen und gezielt genommen. Test `texlua tests/attach_test.lua`. Im Spiel ungeprüft.
 - 0.2.2: Postfach: Schließen ist jetzt ein großes „X“ mittig im Ring (keine Knopfgrafik); Holzknöpfe zentriert, schlanke Planken (Core 0.46.1).
 - 0.2.1: Postfach: Holzknöpfe und Holz-Rollbalken aus dem Core (folgen dem Postfach-Design: Legion = immer, Normal = nie, Automatisch = Gesamtdesign); der Hinweis unten läuft nicht mehr unter das Pergament. Braucht Freewood-Core 0.46.0. Ungeprüft im Spiel.
@@ -81,6 +82,7 @@ Copy the folder `Freewood-Mail` to `World of Warcraft\_forever_\Interface\AddOns
 
 - Taken over from the OctoWoW version (code only). Not yet verified in game; the link to Brett is not complete yet (Brett is still at the older state in Forever).
 - Mail no longer replaces Blizzard functions (`DeleteInboxItem`, `UseContainerItem`): that caused “Freewood-Mail was blocked” when using items on Forever. As a result there is no right-click attaching any more (drag items or use “Add items”) and no protection against deleting cash-on-delivery mails in the Blizzard window.
+- 0.3.1: Fixed: in the normal design the mailbox showed the "Legion der Affen" artwork behind it on first opening, until you switched to Legion and back. Freshly created parts are now shown or hidden correctly right away.
 - 0.3.0: The detail view shows all attachments as a grid like the Blizzard frame (up to 16, count, quality border, tooltip per item). Clicking an icon takes just that item (not for cash on delivery); the button "Take all (n)" takes everything from this mail one after another. Fixed: gaps in attachment slots (after taking from the middle) were not recognised; now all slots are read and taken by slot. Test `texlua tests/attach_test.lua`. Not verified in game.
 - 0.2.2: Mailbox: close button is now a large "X" centred in the ring (no button graphic); wooden buttons centred, slim planks added (core 0.46.1).
 - 0.2.1: Mailbox: wooden buttons and scroll bars from the core (follow the mailbox design: Legion = always, Normal = never, Automatic = overall design); the note at the bottom no longer runs under the parchment. Needs Freewood-Core 0.46.0. Unchecked in game.

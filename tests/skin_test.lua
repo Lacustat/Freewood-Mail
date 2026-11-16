@@ -85,5 +85,22 @@ local row = Obj(); S.StyleRow(row)
 eq(type(row.fwSkinState), "function", "Zeile hat Zustand")
 row.fwSkinState(true)
 theme = "legion"; handlers.DESIGN_CHANGED()
+-- 0.3.1: erster Aufbau im normalen Design darf die Affen-Grafik nicht zeigen (frisch angelegte Teile sind sichtbar)
+assert(loadfile("MailSkin.lua"))()
+S = Mail.Skin
+Mail.db.settings.skin = "auto"; theme = "default"
+local w2 = Panel(); w2.w, w2.h = 660, 560
+local d2 = Panel()
+Mail.ui = { window = w2, title = Obj(), divider = Obj(), close = Obj(), archive = Obj(), tabs = { inbox = Obj(), send = Obj() },
+    content = Obj(), footer = Obj(), panes = { inbox = { detail = d2, Refresh = function() end } }, W = 660, H = 560,
+    tabDefs = { { id = "inbox", label = "A" }, { id = "send", label = "B" } },
+    select = function() end, current = function() return "inbox" end }
+S.OnBuilt()
+local pp = S.Parts()
+eq(pp.art.shown, false, "normal beim ersten Aufbau: Affen-Rahmen aus")
+eq(pp.leather.shown, false, "normal beim ersten Aufbau: Leder aus")
+eq(pp.parchment.shown, false, "normal beim ersten Aufbau: Pergament aus")
+eq(w2.bg.shown, true, "normal beim ersten Aufbau: Grund an")
+eq(w2.w, 660, "normal beim ersten Aufbau: Breite 660")
 print(string.format("skin_test: %d Pruefungen, %d Fehler", n, fails))
 os.exit(fails == 0 and 0 or 1)
