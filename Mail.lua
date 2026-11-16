@@ -850,9 +850,13 @@ function Mail:StepOpen()
     local free = Mail.FreeSlots()
     for idx = #list, 1, -1 do
         local m = list[idx]
-        if m.take and (not run.only or run.only[m.key]) and (not run.pair or Pair(m) == run.pair) and (run.tries[m.sig] or 0) < 3 then
+        -- Versuche je Zustand des Briefs (0.3.2): Anzahl Anhaenge und erster Platz gehoeren dazu. Frueher zaehlte nur
+        -- Absender/Betreff/erstes Item; lagen mehrere gleiche Stapel im Brief (z. B. 4x "Silberblatt x20"), sah der Brief nach
+        -- jedem Nehmen gleich aus, und nach 3 "Versuchen" blieb der Rest liegen.
+        local tk = m.sig .. "#" .. tostring(m.items and #m.items or 0) .. "@" .. tostring(Mail.FirstSlot(m))
+        if m.take and (not run.only or run.only[m.key]) and (not run.pair or Pair(m) == run.pair) and (run.tries[tk] or 0) < 3 then
             if m.money > 0 then
-                run.tries[m.sig] = (run.tries[m.sig] or 0) + 1
+                run.tries[tk] = (run.tries[tk] or 0) + 1
                 run.money = run.money + 1
                 run.touched[Pair(m)] = true
                 NoteTaken(m, "money")
@@ -865,7 +869,7 @@ function Mail:StepOpen()
                 if free <= KEEP_FREE then
                     run.full = true
                 else
-                    run.tries[m.sig] = (run.tries[m.sig] or 0) + 1
+                    run.tries[tk] = (run.tries[tk] or 0) + 1
                     run.items = run.items + 1
                     run.touched[Pair(m)] = true
                     NoteTaken(m, "item")

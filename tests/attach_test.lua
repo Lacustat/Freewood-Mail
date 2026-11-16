@@ -75,4 +75,17 @@ end
 for _, t in ipairs(taken) do assert(t:sub(1, 2) == "1:", "nur Brief 1: " .. t) end
 assert(#taken == 3, "drei Items aus Brief 1 genommen: " .. #taken)
 assert(next(inbox[1].items) == nil and inbox[2].items[1], "Brief 1 leer, Brief 2 unberuehrt")
+-- 5) viele gleiche Stapel (frueher blieb nach 3 gleichen Zustaenden der Rest liegen)
+inbox[1].items = {}
+for a = 1, 6 do inbox[1].items[a] = { "Silberblatt", 765, 20 } end
+list = Mail.ReadInbox()
+taken = {}
+Mail.busy = nil
+assert(Mail:StartTakeMail(list[1]), "gestartet (gleiche Stapel)")
+for _ = 1, 80 do
+    clock = clock + 1
+    if Mail.busy ~= "inbox" then break end
+    Mail:StepOpen()
+end
+assert(#taken == 6 and next(inbox[1].items) == nil, "alle 6 gleichen Stapel genommen: " .. #taken)
 print("attach_test OK")
